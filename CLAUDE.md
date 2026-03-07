@@ -2,23 +2,54 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Repository Structure
+
+```
+memory/
+├── agent_based_models/
+│   └── sugarscape/          # Agent-based model of resource competition
+│       ├── scripts/
+│       │   └── run_single.py
+│       ├── sim/
+│       │   ├── agents.py
+│       │   ├── config.py
+│       │   ├── grid.py
+│       │   ├── metrics.py
+│       │   └── model.py
+│       └── results/
+├── ergodic_systems/
+│   └── bernoulli_shift/     # Block distribution convergence experiment
+│       ├── scripts/
+│       │   └── run_convergence.py
+│       ├── sim/
+│       │   ├── shift.py
+│       │   └── entropy.py
+│       └── results/
+├── PHILOSOPHY.md
+└── README.md
+```
+
 ## Commands
 
 ```bash
-# Run a single simulation (500 steps, default params) → results/single_run.png
-python scripts/run_single.py
+# Sugarscape: single simulation (500 steps) → agent_based_models/sugarscape/results/single_run.png
+cd agent_based_models/sugarscape && python scripts/run_single.py
 
-# Run the full parameter sweep (100 runs) → results/sweep_results.csv + 3 heatmap PNGs
-python scripts/run_sweep.py
+# Bernoulli shift: block convergence → ergodic_systems/bernoulli_shift/results/block_convergence.png
+cd ergodic_systems/bernoulli_shift && python scripts/run_convergence.py
 ```
 
 There is no test suite and no linter configured. The project uses standard `anaconda3` Python 3.11. Dependencies: `mesa==3.3.1`, `numpy`, `pandas`, `matplotlib`, `seaborn`, `scipy`.
 
 ## Architecture
 
-This is a research codebase with a single implemented model: **Sugarscape** (`sugarscape/`), an agent-based model of resource competition used to study the relationship between system "memory" (quantified by KS entropy) and social outcomes (inequality, social mobility).
+This is a research codebase exploring the relationship between dynamical system memory (quantified by KS entropy) and social outcomes. It contains two categories of experiments:
 
-### Data flow
+### Agent-Based Models — Sugarscape (`agent_based_models/sugarscape/`)
+
+An agent-based model of resource competition studying inequality and social mobility.
+
+**Data flow:**
 
 ```
 SugarscapeConfig  →  SugarscapeModel  →  mesa.DataCollector
@@ -35,17 +66,22 @@ SugarscapeConfig  →  SugarscapeModel  →  mesa.DataCollector
 - Population is held constant: dead agents are replaced immediately in `SugarAgent._die_and_replace()`. Replacement is skipped if `grid.empties` is empty.
 - The grid is `MultiGrid` (multiple agents per cell allowed). Agents do not restrict movement to unoccupied cells — they compete for sugar in random activation order.
 
-### Metrics (`metrics.py`)
+**Metrics (`metrics.py`):** `gini()`, `social_mobility_index()`, `approximate_ks_entropy()`.
 
-Three standalone functions used by both scripts and `experiment.py`:
-- `gini()` — standard Gini coefficient
-- `social_mobility_index()` — Spearman rank correlation of wealth ranks at step 50 vs final step (lower = more mobile)
-- `approximate_ks_entropy()` — Grassberger-Procaccia K2 correlation entropy from a scalar time series; returns `np.nan` if the series is too short or constant
+### Ergodic Systems — Bernoulli Shift (`ergodic_systems/bernoulli_shift/`)
 
-### Experiment runner (`experiment.py`)
+A minimal dynamical systems experiment (no agents) demonstrating how KS entropy controls the rate at which empirical block distributions converge to the true product measure.
 
-`run_sweep(param_grid, n_steps, n_seeds, output_dir)` runs a full-factorial loop — no Mesa BatchRunner. Each run constructs a fresh `SugarscapeModel` from a `SugarscapeConfig` with fields overridden by the param combo. Seeds are `1000 + seed_offset`.
+**Core modules:**
+- `sim/shift.py` — sequence generation (`generate_sequence`), empirical/true block distributions, KL divergence
+- `sim/entropy.py` — `shannon_entropy(distribution)` computes H(p) = KS entropy h for a Bernoulli shift
+
+**Design choices:**
+- Alphabet: arbitrary discrete size (2+), distribution passed as a numpy array
+- Block distributions stored as dicts keyed by tuples
+- KL divergence sums only over empirically observed blocks (Q̂(b) > 0)
+- All randomness via `numpy.random.Generator` with explicit seeds
 
 ## Research context
 
-The long-term goal is to find the KS entropy that maximizes a meritocracy/social-mobility metric. The current Sugarscape implementation is the **Phase 1 baseline** — standard model, no agent memory. Phase 2 will add explicit agent memory (history-weighted movement decisions) as a tunable parameter directly linked to KS entropy. See `PHILOSOPHY.md` for the ergodic theory framework and `README.md` for full project description and current results.
+The long-term goal is to find the KS entropy that maximizes a meritocracy/social-mobility metric. The Sugarscape model is the **Phase 1 baseline** — standard model, no agent memory. The Bernoulli shift experiment validates the theoretical relationship between entropy and convergence rates. Phase 2 will add explicit agent memory (history-weighted movement decisions) as a tunable parameter directly linked to KS entropy. See `PHILOSOPHY.md` for the ergodic theory framework and `README.md` for full project description.
