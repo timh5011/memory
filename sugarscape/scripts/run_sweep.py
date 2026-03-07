@@ -14,7 +14,7 @@ import seaborn as sns
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sugarscape.experiment import run_sweep
+from sim.experiment import run_sweep
 
 
 PARAM_GRID = {

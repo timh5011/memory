@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 # Allow importing from the project root
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sugarscape import SugarscapeModel, SugarscapeConfig
-from sugarscape.metrics import gini, approximate_ks_entropy
+from sim import SugarscapeModel, SugarscapeConfig
+from sim.metrics import gini, approximate_ks_entropy
 
 
 def main() -> None:
