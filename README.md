@@ -96,6 +96,8 @@ The experiment computes `H(empirical k-block distribution) / k` for increasing b
 
 ### Experiment 2 — Markov chain entropy rate (`markov_sim.py`)
 
+(Markov Chains are memoryless - that's not what I mean by memory here. note this)
+
 A Markov chain introduces memory: the next symbol depends on the current state. Its KS entropy rate is the conditional entropy `h = H(X_{n+1} | X_n) = -Σᵢ πᵢ Σⱼ Tᵢⱼ log Tᵢⱼ`, where `π` is the stationary distribution and `T` is the transition matrix.
 
 The experiment compares two chains: a **low-memory** chain (transition matrix is uniform — equivalent to i.i.d.) and a **high-memory** chain (sticky: tends to stay in the same state). For the high-memory chain, `H(k-block)/k` starts above the true entropy rate at `k=1` and converges downward as `k` grows. The convergence is slower precisely because the chain has stronger temporal correlations — longer blocks are needed before the empirical distribution captures the full dependence structure.
