@@ -26,11 +26,9 @@
 
 ## 1. Project Overview
 
-This project investigates a deceptively simple question: **how much memory is optimal for a society to grow and progress?**
+Memory is simultaneously one of the most empowering and crippling qualities that humanity possesses. Our memories enable us to learn, adapt, and celebrate old traditions. Without a strong memory, we would quickly forget the lessons we have learned and never be able to advance. However, too strong a memory can act as an inertial force, holding us back from change. We get stuck in bad habits and fall victim to past trauma. How many world religions preach forgiveness in some way or another? How many times have we heard that the secret to success and happiness is staying present? There is a fine line between a healthy respect for the past and becoming overly traditional.
 
-Memory here is not metaphorical. A dynamical system's "memory length" is formally quantified using **Kolmogorov-Sinai (KS) entropy**. High KS entropy means the system generates information rapidly — its present state depends weakly on its past, i.e., short memory. Low KS entropy means the system is more deterministic — its future is tightly constrained by its history, i.e., long memory.
-
-A society with no memory of the past repeats its mistakes. A society with too much memory cannot forgive them — it locks individuals into the outcomes of their worst moments and suppresses mobility. Somewhere between these extremes lies an optimal point. This project builds the simulation and analytical infrastructure to find it.
+I aim to answer the questions: how much memory is optimal for growth? How far back into a system's history must we go until the past no longer has significant influence on the present? These questions lead me to learning about ergodic theory. We must first be able to quantify a system's memory.
 
 ---
 
@@ -64,13 +62,13 @@ KS entropy is therefore a precise measure of memory length: the higher the entro
 
 The Sugarscape model (Epstein & Axtell, *Growing Artificial Societies*, 1996) is a canonical agent-based model of resource competition and wealth accumulation. The implementation here follows the original specification closely:
 
-**Environment:** A 50×50 toroidal grid where each cell has a maximum sugar capacity $\text{sugar\_max} \in \{0,1,2,3,4\}$, initialized via two Gaussian peaks (centered at (15,15) and (35,35), $\sigma = 10$) scaled so the peak cell has capacity 4. Each step, every cell's sugar grows by $\alpha$ (the regrowth rate) up to its maximum.
+**Environment:** A 50×50 toroidal grid where each cell has a maximum sugar capacity `sugar_max` $\in \{0,1,2,3,4\}$, initialized via two Gaussian peaks (centered at (15,15) and (35,35), $\sigma = 10$) scaled so the peak cell has capacity 4. Each step, every cell's sugar grows by $\alpha$ (the regrowth rate) up to its maximum.
 
 **Agents:** 250 agents are placed at random cells. Each agent is characterized by:
-- **Sugar** — initial wealth, drawn from $\text{Uniform}(5, 25)$
-- **Metabolism** — energy cost per step, drawn from $\text{Uniform}(1, 4)$
-- **Vision** — how far the agent can see in each cardinal direction, drawn from $\text{Uniform}(1, \text{max\_vision})$
-- **Max age** — lifespan, drawn from $\text{Uniform}(60, 100)$
+- **Sugar** — initial wealth, drawn from Uniform(5, 25)
+- **Metabolism** — energy cost per step, drawn from Uniform(1, 4)
+- **Vision** — how far the agent can see in each cardinal direction, drawn from Uniform(1, `max_vision`)
+- **Max age** — lifespan, drawn from Uniform(60, 100)
 
 **Agent behavior (each step, in random order):**
 1. Look up to `vision` cells in all 4 cardinal directions; collect candidates
@@ -79,7 +77,7 @@ The Sugarscape model (Epstein & Axtell, *Growing Artificial Societies*, 1996) is
 4. Pay metabolism cost; increment age
 5. Die if wealth drops below zero or age exceeds max age; immediately replaced by a new agent at a random empty cell
 
-**Sugar regrowth:** After all agents have moved, every cell's sugar increases by $\alpha$, capped at $\text{sugar\_max}$.
+**Sugar regrowth:** After all agents have moved, every cell's sugar increases by $\alpha$, capped at `sugar_max`.
 
 ### Connecting the Model to the Theory
 
