@@ -84,25 +84,29 @@ python scripts/run_single.py    # → results/single_run.png
 
 # Ergodic Systems
 
-## Bernoulli Shift — Block Distribution Convergence (`ergodic_systems/bernoulli_shift/`)
+## Bernoulli Shift (`ergodic_systems/bernoulli_shift/`)
 
-A minimal dynamical systems experiment demonstrating how KS entropy controls the rate at which empirical block distributions converge to the true product measure. No agents — just sequences and statistics.
+Two computational experiments exploring KS entropy and the role of memory in dynamical systems.
 
-### The Experiment
+### Experiment 1 — Bernoulli entropy rate (`sim.py`)
 
-For a Bernoulli shift with distribution p over a finite alphabet, the KS entropy equals the Shannon entropy h(p) = -sum(p_i log p_i). The experiment generates i.i.d. sequences of varying lengths, computes empirical block distributions (sliding windows of length k), and measures convergence to the true product measure via KL divergence.
+A Bernoulli shift is an i.i.d. process: each symbol is drawn independently from a fixed distribution `p`. Its KS entropy is simply the Shannon entropy `H(p)`.
 
-### Key Results
+The experiment computes `H(empirical k-block distribution) / k` for increasing block lengths `k`, for two distributions: a fair coin (`H=1.0 bit`) and a biased coin (`H≈0.47 bits`). The result is flat — both curves sit on their true entropy immediately at `k=1` and stay there. This is expected: because symbols are independent, the block entropy grows exactly linearly with `k`, so the rate is constant. There is nothing to converge.
 
-- **High-entropy distributions converge slower** — uniform distributions need larger sequence lengths N to approximate the true block distribution
-- **Increasing block length k worsens convergence** for all distributions
-- **The crossover length scales as e^{hk}** — a direct manifestation of entropy controlling the effective state space size
+### Experiment 2 — Markov chain entropy rate (`markov_sim.py`)
+
+A Markov chain introduces memory: the next symbol depends on the current state. Its KS entropy rate is the conditional entropy `h = H(X_{n+1} | X_n) = -Σᵢ πᵢ Σⱼ Tᵢⱼ log Tᵢⱼ`, where `π` is the stationary distribution and `T` is the transition matrix.
+
+The experiment compares two chains: a **low-memory** chain (transition matrix is uniform — equivalent to i.i.d.) and a **high-memory** chain (sticky: tends to stay in the same state). For the high-memory chain, `H(k-block)/k` starts above the true entropy rate at `k=1` and converges downward as `k` grows. The convergence is slower precisely because the chain has stronger temporal correlations — longer blocks are needed before the empirical distribution captures the full dependence structure.
+
+This is the phenomenon invisible in Bernoulli: **memory slows the rate at which block entropy converges to the true entropy rate.**
 
 ### Running
 
 ```bash
 cd ergodic_systems/bernoulli_shift
-python scripts/run_convergence.py    # → results/block_convergence.png
+python sim.py          # → entropy_rate.png
+python markov_sim.py   # → markov_entropy_rate.png
 ```
 
-The script tests several distributions (binary peaked through quaternary uniform) across block lengths k=1..4 and sequence lengths N=100..100,000, averaging over 10 seeds per configuration.

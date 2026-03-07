@@ -18,13 +18,10 @@ memory/
 │       │   └── model.py
 │       └── results/
 ├── ergodic_systems/
-│   └── bernoulli_shift/     # Block distribution convergence experiment
-│       ├── scripts/
-│       │   └── run_convergence.py
-│       ├── sim/
-│       │   ├── shift.py
-│       │   └── entropy.py
-│       └── results/
+│   └── bernoulli_shift/     # Entropy rate convergence experiments
+│       ├── bernoulli_shift.py   # core: distribution, sequence generation, shift, block distributions, KL divergence
+│       ├── sim.py               # Bernoulli: empirical entropy rate H(k-block)/k vs k
+│       └── markov_sim.py        # Markov chain: entropy rate convergence showing memory effects
 ├── PHILOSOPHY.md
 └── README.md
 ```
@@ -35,8 +32,11 @@ memory/
 # Sugarscape: single simulation (500 steps) → agent_based_models/sugarscape/results/single_run.png
 cd agent_based_models/sugarscape && python scripts/run_single.py
 
-# Bernoulli shift: block convergence → ergodic_systems/bernoulli_shift/results/block_convergence.png
-cd ergodic_systems/bernoulli_shift && python scripts/run_convergence.py
+# Bernoulli shift: entropy rate vs block length → ergodic_systems/bernoulli_shift/entropy_rate.png
+cd ergodic_systems/bernoulli_shift && python sim.py
+
+# Markov chain: entropy rate convergence showing memory effects → markov_entropy_rate.png
+cd ergodic_systems/bernoulli_shift && python markov_sim.py
 ```
 
 There is no test suite and no linter configured. The project uses standard `anaconda3` Python 3.11. Dependencies: `mesa==3.3.1`, `numpy`, `pandas`, `matplotlib`, `seaborn`, `scipy`.
@@ -70,14 +70,26 @@ SugarscapeConfig  →  SugarscapeModel  →  mesa.DataCollector
 
 ### Ergodic Systems — Bernoulli Shift (`ergodic_systems/bernoulli_shift/`)
 
-A minimal dynamical systems experiment (no agents) demonstrating how KS entropy controls the rate at which empirical block distributions converge to the true product measure.
+Two experiments demonstrating KS entropy and the role of memory in dynamical systems.
 
-**Core modules:**
-- `sim/shift.py` — sequence generation (`generate_sequence`), empirical/true block distributions, KL divergence
-- `sim/entropy.py` — `shannon_entropy(distribution)` computes H(p) = KS entropy h for a Bernoulli shift
+**Core module (`bernoulli_shift.py`):**
+- `make_distribution(probs)` — validates and returns a probability vector
+- `generate_sequence(p, length, seed)` — i.i.d. samples from p (the Bernoulli process)
+- `shift(seq)` — left-shift map: drops first symbol
+- `true_block_distribution(p, k)` — product measure over all length-k blocks via `itertools.product`
+- `empirical_block_distribution(seq, k)` — sliding window counts normalized to frequencies
+- `kl_divergence(empirical, true)` — KL(Q̂ || P), summing only over observed blocks
+
+**`sim.py` — Bernoulli entropy rate:**
+- Shows `H(empirical k-block) / k` vs k for fair vs biased coin
+- Both curves are flat (already at H(p) for all k) — because i.i.d. symbols have no memory
+
+**`markov_sim.py` — Markov chain entropy rate:**
+- Same experiment on two Markov chains: low memory (near-independent) vs high memory (sticky)
+- High-memory chain shows `H(k-block)/k` starting high at k=1 and converging downward to true entropy rate
+- This convergence is invisible in Bernoulli but emerges when symbols have temporal correlations
 
 **Design choices:**
-- Alphabet: arbitrary discrete size (2+), distribution passed as a numpy array
 - Block distributions stored as dicts keyed by tuples
 - KL divergence sums only over empirically observed blocks (Q̂(b) > 0)
 - All randomness via `numpy.random.Generator` with explicit seeds
