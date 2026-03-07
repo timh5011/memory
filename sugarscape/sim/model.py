@@ -42,7 +42,6 @@ class SugarscapeModel(mesa.Model):
                 "gini": lambda m: gini(
                     np.array([a.sugar for a in m.agents], dtype=float)
                 ),
-                "wealth_list": lambda m: [a.sugar for a in m.agents],
             }
         )
 

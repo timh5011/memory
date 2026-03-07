@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sim import SugarscapeModel, SugarscapeConfig
-from sim.metrics import gini, approximate_ks_entropy
+from sim.metrics import gini
 
 
 def main() -> None:
@@ -33,15 +33,15 @@ def main() -> None:
     population = df["population"].values
     mean_sugar = df["mean_sugar"].values
     gini_vals = df["gini"].values
-    final_wealth = np.array(df["wealth_list"].iloc[-1], dtype=float)
 
-    ks = approximate_ks_entropy(mean_sugar)
     final_gini = float(np.mean(gini_vals[-50:]))
     final_mean = float(np.mean(mean_sugar[-50:]))
 
     print(f"Final Gini (last 50 steps avg):       {final_gini:.4f}")
     print(f"Final mean sugar (last 50 steps avg): {final_mean:.4f}")
-    print(f"Approximate KS entropy:               {ks:.4f}" if np.isfinite(ks) else "Approximate KS entropy: nan")
+
+    # Collect final wealth for histogram
+    final_wealth = np.array([a.sugar for a in model.agents], dtype=float)
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
     fig.suptitle("Sugarscape – Single Run (seed=42, 500 steps)", fontsize=14)

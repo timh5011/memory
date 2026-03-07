@@ -106,7 +106,7 @@ Taking a step back, Lyapunov Exponents can help us answer one of our previous qu
 
 It is possible that apparently different systems follow the same underlying dynamics. If this is the case, we say that these systems are *conjugate*. Formally, two measure-preserving dynamical systems $(X, \mathcal{B}_X, \mu, T)$ and $(Y, \mathcal{B}_Y, \nu, S)$ are conjugate if there exists a measurable bijection $\phi: X \to Y$ such that
 
-1. $\phi$ preserves the measure: $\nu = \phi_*\mu$, where $\phi_*\mu(A) := \mu(\phi^{-1}(A))$ for all $A \in \mathcal{B}_Y$, and
+1. $\phi$ preserves the measure: $\nu = \phi_{*}\mu$, where $\phi_{*}\mu(A) := \mu(\phi^{-1}(A))$ for all $A \in \mathcal{B}_Y$, and
 2. $\phi$ preserves the dynamics: $\phi \circ T = S \circ \phi$, for $\mu$-almost every $x \in X$.
 
 Measure-theoretically conjugate systems are equivalent to each other from a measure-theoretic perspective, meaning that their long-term statistical behavior is identical. This notion plays a similar role to conjugacy and, more generally, the concept of an isomorphism, in algebra; we are trying to ignore the way that we "label" the system and only focus on its fundamental structure. Thus, it is a natural result that a system's KS entropy is invariant under conjugacy.
