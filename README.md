@@ -1,3 +1,9 @@
+# Dynamical System Memory
+
+Memory is simultaneously one of the most empowering and crippling qualities that humanity possesses. Our memories enable us to learn, adapt, and celebrate old traditions. Without a strong memory, we would quickly forget the lessons we have learned and never be able to advance. However, too strong a memory can act as an inertial force, holding us back from change. We get stuck in bad habits and fall victim to past trauma. How many world religions preach forgiveness in some way or another? How many times have we heard that the secret to success and happiness is staying present? There is a fine line between a healthy respect for the past and becoming overly traditional.
+
+I aim to answer the questions: how much memory is optimal for growth? How far back into a system's history must we go until the past no longer has significant influence on the present? These questions lead me to learning about ergodic theory. We must first be able to quantify a system's memory.
+
 # Sugarscape
 
 An implementation of the Sugarscape agent-based model from Epstein & Axtell's *Growing Artificial Societies* (1996). Sugarscape is one of the foundational models in computational social science, demonstrating how simple individual rules produce complex collective phenomena — most notably, realistic wealth inequality emerges without anyone designing it in.
@@ -51,40 +57,10 @@ With the replacement rule active, population stays constant at 250. The turnover
 
 Sugarscape demonstrates a core principle of complex systems: **macro-level patterns need not be designed or intended — they can emerge from micro-level rules.** No agent is trying to create inequality. No central planner is distributing resources unfairly. Yet substantial inequality reliably emerges from nothing more than agents with different abilities foraging on a landscape. This makes Sugarscape a powerful pedagogical tool for understanding how simple, decentralized interactions can produce the large-scale social patterns we observe in the real world.
 
-## Repository Structure
-
-```
-sugarscape/
-├── sim/
-│   ├── __init__.py       # Package exports
-│   ├── config.py         # SugarscapeConfig dataclass
-│   ├── grid.py           # Sugar landscape initialization
-│   ├── agents.py         # SugarAgent class
-│   ├── model.py          # SugarscapeModel class
-│   └── metrics.py        # Gini coefficient
-├── scripts/
-│   └── run_single.py     # Single simulation + diagnostic plots
-└── results/              # Generated outputs (PNG)
-```
-
-## Setup and Usage
-
-**Dependencies:** Python 3.11, `mesa==3.3.1`, `numpy`, `pandas`, `matplotlib`
-
-```bash
-pip install mesa numpy pandas matplotlib
-```
-
-**Run a simulation:**
-
-```bash
-cd sugarscape
-python scripts/run_single.py
-```
-
-Outputs a 4-panel diagnostic plot to `results/single_run.png` showing population, mean sugar, Gini coefficient over time, and the final wealth distribution histogram.
 
 **Configuration** (in `sim/config.py`):
+
+Outputs a 4-panel diagnostic plot to `results/single_run.png` showing population, mean sugar, Gini coefficient over time, and the final wealth distribution histogram.
 
 | Parameter | Default | Description |
 |---|---|---|
