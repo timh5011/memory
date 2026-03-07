@@ -1,9 +1,5 @@
 # Memory: Optimal KS Entropy for Social Progress
 
-*Tim Healy*
-
----
-
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
