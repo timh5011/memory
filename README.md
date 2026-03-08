@@ -4,6 +4,24 @@ Memory is simultaneously one of the most empowering and crippling qualities that
 
 I aim to answer the questions: how much memory is optimal for growth? How far back into a system's history must we go until the past no longer has significant influence on the present? These questions lead me to learning about ergodic theory. We must first be able to quantify a system's memory.
 
+## Table of Contents
+
+- [Repository Structure](#repository-structure)
+- [Agent-Based Models](#agent-based-models)
+  - [Sugarscape](#sugarscape-agent_based_modelssugarscape)
+    - [The Model](#the-model)
+    - [What the Model Measures](#what-the-model-measures)
+    - [Why It Matters](#why-it-matters)
+    - [KS Entropy Estimation](#ks-entropy-estimation)
+  - [Minority Game](#minority-game-agent_based_modelsminority_game)
+    - [The Model](#the-model-1)
+    - [The Phase Transition](#the-phase-transition)
+    - [KS Entropy Analysis](#ks-entropy-analysis)
+    - [Entropy vs Efficiency](#entropy-vs-efficiency)
+- [Ergodic Systems](#ergodic-systems)
+  - [Framework](#framework-ergodic_systems)
+  - [Results](#results)
+
 ## Repository Structure
 
 This project contains two categories of computational experiments:
@@ -109,6 +127,93 @@ python scripts/run_entropy_lyapunov.py       # → results/lyapunov_entropy.png
 
 ---
 
+## Minority Game (`agent_based_models/minority_game/`)
+
+An implementation of the Minority Game, also known as the El Farol Bar Problem (Arthur 1994, Challet & Zhang 1997). N agents simultaneously choose between two options each round; those on the minority side win. Unlike Sugarscape, the Minority Game has a single parameter — memory length M — that directly controls the system's KS entropy, and a clear success metric (efficiency) that measures how well agents coordinate. This makes it ideally suited for answering the project's central question: *what level of system memory optimizes collective outcomes?*
+
+### The Model
+
+#### Setup
+
+301 agents (odd, to guarantee a minority exists) play a repeated binary choice game. There is no spatial structure — agents interact only through the aggregate outcome. Each agent holds S=2 strategy tables, randomly assigned at initialization. A strategy table maps every possible M-length binary history pattern to an action (0 or 1), so each table has 2^M entries.
+
+#### Game Mechanics
+
+Each round:
+
+1. All agents observe the same shared history — the last M winning outcomes
+2. Each agent consults their highest-scoring strategy table to choose 0 or 1
+3. All choices are collected simultaneously (no agent sees others' choices)
+4. The minority side wins
+5. Every strategy table (not just the one used) gets +1 if it would have picked the winning side, -1 otherwise
+6. The winning action is appended to the shared history
+
+The key insight is that agents don't learn individually — they accumulate evidence about which of their fixed strategies performs best. Strategies that correctly anticipate crowd behavior rise in score; strategies that follow the crowd fall.
+
+#### The Complexity Ratio α
+
+The single most important parameter is α = 2^M / N, the ratio of possible history patterns to the number of agents. This ratio controls the phase transition:
+
+- **α < α_c ≈ 0.34 (crowded phase)**: Too many agents share too few strategies. Agents crowd onto the same patterns, creating herding behavior. Volatility exceeds the random baseline — agents do *worse* than coin flips.
+- **α ≈ α_c (critical point)**: Optimal coordination. Volatility reaches its minimum and efficiency peaks.
+- **α > α_c (uncrowded phase)**: Agents effectively act independently. Volatility approaches the random coin-flip baseline (σ²/N = 1/4).
+
+### The Phase Transition
+
+The sweep across M=2..12 (with N=301 fixed) reveals the classic Minority Game phase transition (`results/sweep_phase_transition.png`):
+
+| M | α = 2^M/N | Volatility σ²/N | Efficiency | Predictability |
+|---|---|---|---|---|
+| 2 | 0.013 | 3.72 | -13.9 | high (exploitable) |
+| 5 | 0.106 | 0.77 | -2.1 | moderate |
+| 7 | 0.425 | 0.14 | 0.46 | ≈ 0 (efficient) |
+| 8 | 0.851 | 0.16 | 0.35 | ≈ 0 |
+| 12 | 13.6 | 0.24 | 0.06 | ≈ 0 |
+
+At low α (short memory, crowded phase), agents are anti-coordinated so badly that volatility is 15x the random baseline and predictability is high — the market is exploitable. Near the critical point (M=7), efficiency peaks and predictability drops to zero — agents achieve genuine coordination, doing better than random. At high α (long memory), agents behave nearly independently and efficiency drops back toward zero.
+
+### KS Entropy Analysis
+
+The KS entropy of the binary outcome sequence is estimated using block counting (the same `empirical_block_distribution` and `shannon_entropy` functions from the ergodic systems framework). The outcome sequence is already binary, so no symbolization is needed.
+
+At three representative memory lengths (M=3 crowded, M=6 near-critical, M=9 uncrowded):
+
+- **M=3 (crowded)**: Conditional entropy converges to ~0.31 bits — highly predictable outcomes due to herding
+- **M=6 (near-critical)**: Conditional entropy ~0.59 bits — moderate unpredictability
+- **M=9 (uncrowded)**: Conditional entropy ~0.57 bits — near-random but with residual structure
+
+The crowded phase has the lowest entropy because the herding dynamics create strong temporal correlations in the outcome sequence. As α increases through the critical point, the outcome becomes less predictable.
+
+### Entropy vs Efficiency
+
+The entropy analysis (`results/sweep_entropy.png`) plots KS entropy against each of the standard metrics across the full range of memory lengths. Each point in the scatter plots represents one simulation (M value, seed), colored by M, with the mean trajectory overlaid.
+
+The entropy-efficiency plot reveals that **efficiency is maximized at intermediate entropy** — not at the lowest entropy (crowded phase, where herding destroys coordination) and not at the highest entropy (uncrowded phase, where agents act randomly). The optimal collective outcome occurs near the phase transition, where the system retains enough memory to coordinate but not so much that agents crowd onto identical strategies. The entropy-volatility and entropy-predictability plots show the same relationship from complementary angles.
+
+This is a direct computational answer to the project's motivating question: *how much memory is optimal?* In the Minority Game, the answer is clear — the critical point α_c ≈ 0.34 represents the optimal balance between remembering too much and too little.
+
+### Running
+
+```bash
+cd agent_based_models/minority_game
+python scripts/run_single.py     # → results/single_run.png
+python scripts/run_entropy.py    # → results/entropy_analysis.png
+python scripts/run_sweep.py      # → results/sweep_phase_transition.png, sweep_entropy.png
+```
+
+**Configuration** (in `sim/config.py`):
+
+| Parameter | Default | Description |
+|---|---|---|
+| `n_agents` | 301 | Number of agents (must be odd) |
+| `memory_length` | 6 | M — history bits agents observe |
+| `n_strategies` | 2 | S — strategy tables per agent |
+| `n_steps` | 500 | Simulation length |
+| `seed` | 42 | Random seed for reproducibility |
+| `alpha` (property) | 2^M/N | Complexity ratio controlling the phase transition |
+
+---
+
 # Ergodic Systems
 
 ## Framework (`ergodic_systems/`)
@@ -157,4 +262,3 @@ python sims/lyapunov_sim.py     # → results/logistic_lyapunov.png
 **Logistic map (r=4)** — Trajectory plots show chaotic evolution from 3 initial conditions. H(k)/k converges to 1.0 bits (= log2(2), matching the Lyapunov exponent ln(2) via Pesin's identity). The conditional entropy H(k)-H(k-1) drops below the analytical value at large k due to finite-sample underestimation — a known limitation of the box-counting method.
 
 **Lyapunov exponent (logistic map)** — Both the perturbation method (Benettin's algorithm) and the Jacobian method converge to λ = ln(2) ≈ 0.6931 nats/step = 1.0 bits/step, matching the analytical value exactly. This validates Pesin's identity (h_KS = λ for smooth 1D maps) and confirms consistency between the block-counting and Lyapunov approaches. The Bernoulli shift is excluded from Lyapunov estimation since it is an i.i.d. symbolic process with no continuous state to perturb.
-

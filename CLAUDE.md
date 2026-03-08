@@ -24,7 +24,7 @@ memory/
 │       ├── scripts/
 │       │   ├── run_single.py        # Single run diagnostic (4-panel plot)
 │       │   ├── run_entropy.py       # KS entropy analysis at M∈{3,6,9}
-│       │   └── run_sweep.py         # THE MONEY PLOT: sweep M, entropy vs efficiency
+│       │   └── run_sweep.py         # Sweep M: phase transition + entropy analysis
 │       ├── sim/
 │       │   ├── agents.py            # MinorityGameAgent with S strategy tables
 │       │   ├── config.py            # MinorityGameConfig (N, M, S, α=2^M/N)
@@ -69,7 +69,7 @@ cd agent_based_models/minority_game && python scripts/run_single.py
 # Minority Game: KS entropy at M∈{3,6,9} (5000 steps) → results/entropy_analysis.png
 cd agent_based_models/minority_game && python scripts/run_entropy.py
 
-# Minority Game: sweep M=2..12, 20 seeds (THE MONEY PLOT) → results/sweep.png
+# Minority Game: sweep M=2..12, 20 seeds → results/sweep_phase_transition.png, sweep_entropy.png
 cd agent_based_models/minority_game && python scripts/run_sweep.py
 
 # Bernoulli shift → ergodic_systems/results/bernoulli_trajectories.png, bernoulli_entropy_rate.png
