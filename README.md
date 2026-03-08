@@ -84,31 +84,43 @@ python scripts/run_single.py    # → results/single_run.png
 
 # Ergodic Systems
 
-## Bernoulli Shift (`ergodic_systems/bernoulli_shift/`)
+## Framework (`ergodic_systems/`)
 
-Two computational experiments exploring KS entropy and the role of memory in dynamical systems.
+A general-purpose framework for defining ergodic dynamical systems and computing their KS entropy numerically.
 
-### Experiment 1 — Bernoulli entropy rate (`sim.py`)
+### Architecture
 
-A Bernoulli shift is an i.i.d. process: each symbol is drawn independently from a fixed distribution `p`. Its KS entropy is simply the Shannon entropy `H(p)`.
+**`ergodic_system.py`** — Abstract base class for measure-preserving ergodic systems (X, B, mu, T). Defines the interface:
+- `iterate(state)` — apply the map T once
+- `generate_trajectory(initial_state, n_steps, seed)` — produce a trajectory from the invariant measure
+- `sample_initial_state(seed)` — sample from mu
+- Optional: `jacobian()`, `symbolize()`, `analytical_ks_entropy()`
 
-The experiment computes `H(empirical k-block distribution) / k` for increasing block lengths `k`, for two distributions: a fair coin (`H=1.0 bit`) and a biased coin (`H≈0.47 bits`). The result is flat — both curves sit on their true entropy immediately at `k=1` and stay there. This is expected: because symbols are independent, the block entropy grows exactly linearly with `k`, so the rate is constant. There is nothing to converge.
+**`bernoulli_shift.py`** — The Bernoulli shift as a concrete `ErgodicSystem` subclass, plus module-level utility functions:
+- `BernoulliShift(probs)` — i.i.d. process on a finite alphabet with distribution p
+- `make_distribution(probs)` — validate a probability vector
+- `generate_sequence(p, length, seed)` — sample i.i.d. symbols
+- `shift(seq)` — left-shift map
+- `empirical_block_distribution(seq, k)` — sliding window block frequencies
+- `true_block_distribution(p, k)` — exact product measure over k-blocks
 
-### Experiment 2 — Markov chain entropy rate (`markov_sim.py`)
+**`ks_entropy.py`** — Entropy computation via the box-counting (block entropy) method:
+- `shannon_entropy(dist)` — H = -sum q log2(q) over a distribution dict
+- `block_entropy_estimates(system, n_steps, k_max, seed)` — returns block entropies H(k), entropy rates H(k)/k, and differences H(k) - H(k-1)
+- `plot_entropy_convergence(...)` — visualize H(k)/k vs k with optional analytical reference line
 
-(Markov Chains are memoryless - that's not what I mean by memory here. note this)
-
-A Markov chain introduces memory: the next symbol depends on the current state. Its KS entropy rate is the conditional entropy `h = H(X_{n+1} | X_n) = -Σᵢ πᵢ Σⱼ Tᵢⱼ log Tᵢⱼ`, where `π` is the stationary distribution and `T` is the transition matrix.
-
-The experiment compares two chains: a **low-memory** chain (transition matrix is uniform — equivalent to i.i.d.) and a **high-memory** chain (sticky: tends to stay in the same state). For the high-memory chain, `H(k-block)/k` starts above the true entropy rate at `k=1` and converges downward as `k` grows. The convergence is slower precisely because the chain has stronger temporal correlations — longer blocks are needed before the empirical distribution captures the full dependence structure.
-
-This is the phenomenon invisible in Bernoulli: **memory slows the rate at which block entropy converges to the true entropy rate.**
+**`sim.py`** — Demo/validation script comparing fair coin ([0.5, 0.5]) and biased coin ([0.9, 0.1]) Bernoulli shifts. Both produce flat H(k)/k curves because i.i.d. processes have no memory — the entropy rate equals H(p) for all block lengths k.
 
 ### Running
 
 ```bash
-cd ergodic_systems/bernoulli_shift
-python sim.py          # → entropy_rate.png
-python markov_sim.py   # → markov_entropy_rate.png
+cd ergodic_systems
+python sim.py    # → entropy_rate.png
 ```
+
+### Results
+
+- **Fair coin**: H(k)/k = 1.0 bits for all k
+- **Biased coin**: H(k)/k = 0.469 bits for all k
+- Both flat — Bernoulli processes have zero memory, so convergence to the KS entropy is instant. This validates the framework; systems with temporal correlations (e.g. Markov chains) show non-trivial convergence from above.
 
