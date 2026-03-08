@@ -25,6 +25,28 @@ def main():
     print(f"  Estimated H(k)/k at k=1: {h_rate[0]:.4f}, k=8: {h_rate[7]:.4f}, k=16: {h_rate[15]:.4f}")
     print(f"  H(k)-H(k-1) at k=1: {h_diff[0]:.4f}, k=8: {h_diff[7]:.4f}, k=16: {h_diff[15]:.4f}")
 
+    # Trajectory plot
+    colors = ['steelblue', 'coral', 'seagreen']
+    n_show = 200
+    fig_traj, ax_traj = plt.subplots(figsize=(10, 4))
+
+    for i, color in enumerate(colors):
+        traj = lm.generate_trajectory(n_steps=n_show, seed=i)
+        ax_traj.plot(range(n_show), traj, color=color, alpha=0.7, linewidth=0.8, label=f'x₀={traj[0]:.3f}')
+
+    ax_traj.set_title('Logistic Map (r=4): Trajectories')
+    ax_traj.set_xlabel('Time step')
+    ax_traj.set_ylabel('x')
+    ax_traj.legend(loc='upper right')
+    ax_traj.grid(True, alpha=0.3)
+
+    fig_traj.tight_layout()
+    traj_path = os.path.join(RESULTS_DIR, 'logistic_trajectories.png')
+    fig_traj.savefig(traj_path, dpi=150, bbox_inches='tight')
+    print(f"Saved: {traj_path}")
+    plt.close(fig_traj)
+
+    # Entropy rate plots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
     # H(k)/k convergence

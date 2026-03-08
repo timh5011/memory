@@ -31,6 +31,37 @@ def main():
     print(f"  Analytical H(p) = {h_biased:.4f} bits")
     print(f"  Estimated H(k)/k at k=1: {hr_b[0]:.4f}, k=6: {hr_b[5]:.4f}, k=12: {hr_b[11]:.4f}")
 
+    # Trajectory plots
+    colors = ['steelblue', 'coral', 'seagreen']
+    n_show = 100
+    fig_traj, (ax_fair, ax_biased) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+
+    for i, color in enumerate(colors):
+        traj_f = fair.generate_trajectory(n_steps=n_show, seed=i)
+        traj_b = biased.generate_trajectory(n_steps=n_show, seed=i)
+        ax_fair.step(range(n_show), traj_f, where='mid', color=color, alpha=0.7, label=f'seed={i}')
+        ax_biased.step(range(n_show), traj_b, where='mid', color=color, alpha=0.7, label=f'seed={i}')
+
+    ax_fair.set_title('Fair Coin [0.5, 0.5]')
+    ax_fair.set_ylabel('Symbol')
+    ax_fair.set_yticks([0, 1])
+    ax_fair.legend(loc='upper right')
+    ax_fair.grid(True, alpha=0.3)
+
+    ax_biased.set_title('Biased Coin [0.9, 0.1]')
+    ax_biased.set_xlabel('Time step')
+    ax_biased.set_ylabel('Symbol')
+    ax_biased.set_yticks([0, 1])
+    ax_biased.legend(loc='upper right')
+    ax_biased.grid(True, alpha=0.3)
+
+    fig_traj.tight_layout()
+    traj_path = os.path.join(RESULTS_DIR, 'bernoulli_trajectories.png')
+    fig_traj.savefig(traj_path, dpi=150, bbox_inches='tight')
+    print(f"Saved: {traj_path}")
+    plt.close(fig_traj)
+
+    # Entropy rate plot
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.plot(ks_f, hr_f, 'o-', color='steelblue', label='Fair coin H(k)/k')
     ax.axhline(h_fair, linestyle='--', color='steelblue', alpha=0.7,
