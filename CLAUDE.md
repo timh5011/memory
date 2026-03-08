@@ -9,7 +9,9 @@ memory/
 ├── agent_based_models/
 │   └── sugarscape/          # Agent-based model of resource competition
 │       ├── scripts/
-│       │   └── run_single.py
+│       │   ├── run_single.py
+│       │   ├── run_entropy_distribution.py  # Approach 1: distribution-state entropy
+│       │   └── run_entropy_agents.py        # Approach 2: agent-trajectory entropy
 │       ├── sim/
 │       │   ├── agents.py
 │       │   ├── config.py
@@ -38,10 +40,16 @@ memory/
 # Sugarscape: single simulation (500 steps) → agent_based_models/sugarscape/results/single_run.png
 cd agent_based_models/sugarscape && python scripts/run_single.py
 
-# Bernoulli shift: entropy rate validation → ergodic_systems/results/bernoulli_entropy_rate.png
+# Sugarscape: KS entropy of wealth distribution (5000 steps) → results/distribution_entropy.png
+cd agent_based_models/sugarscape && python scripts/run_entropy_distribution.py
+
+# Sugarscape: KS entropy of agent trajectories (5000 steps) → results/agent_entropy.png
+cd agent_based_models/sugarscape && python scripts/run_entropy_agents.py
+
+# Bernoulli shift → ergodic_systems/results/bernoulli_trajectories.png, bernoulli_entropy_rate.png
 cd ergodic_systems && python sims/bernoulli_sim.py
 
-# Logistic map: entropy rate convergence → ergodic_systems/results/logistic_entropy_rate.png
+# Logistic map → ergodic_systems/results/logistic_trajectories.png, logistic_entropy_rate.png
 cd ergodic_systems && python sims/logistic_sim.py
 ```
 
@@ -70,6 +78,7 @@ SugarscapeConfig  →  SugarscapeModel  →  mesa.DataCollector
 - `sugar_grid` is a raw `np.ndarray` on the model, updated in `model.step()`. It is NOT a Mesa `PropertyLayer` — agents read/write it directly via `model.sugar_grid[x, y]`.
 - Mesa 3.x API: `Agent.__init__` takes only `model` (no `unique_id`); `model.rng` is a `numpy.random.Generator`; all randomness flows through `model.rng` for reproducibility.
 - Population is held constant: dead agents are replaced immediately in `SugarAgent._die_and_replace()`. Replacement is skipped if `grid.empties` is empty.
+- Each agent tracks `wealth_history` (list of sugar values after each step). On death, `_die_and_replace()` appends the history to `model.completed_trajectories` before removal.
 - The grid is `MultiGrid` (multiple agents per cell allowed). Agents do not restrict movement to unoccupied cells — they compete for sugar in random activation order.
 
 **Metrics (`metrics.py`):** `gini()`, `social_mobility_index()`, `approximate_ks_entropy()`.
@@ -80,16 +89,17 @@ Framework for defining ergodic dynamical systems and computing KS entropy numeri
 
 **`systems/` — Dynamical system definitions:**
 - `ergodic_system.py` — ABC with abstract methods (`iterate`, `generate_trajectory`, `sample_initial_state`) and optional methods (`jacobian`, `symbolize`, `analytical_ks_entropy`)
-- `bernoulli_shift.py` — `BernoulliShift` subclass (`is_symbolic=True`, `analytical_ks_entropy()` = H(p)) plus module-level utilities: `make_distribution`, `generate_sequence`, `shift`, `empirical_block_distribution`, `true_block_distribution`
+- `bernoulli_shift.py` — `BernoulliShift` subclass (`is_symbolic=True`, `analytical_ks_entropy()` = H(p))
+- `logistic_map.py` — `LogisticMap` subclass (continuous, `symbolize()` via binary partition at 0.5, `analytical_ks_entropy()` = 1.0 bit for r=4 via Pesin's identity)
 
 **`entropy/` — KS entropy computation methods:**
-- `block_counting.py` — `shannon_entropy(dist)`, `block_entropy_estimates(system, ...)` → `(ks, H_k, h_rate, h_diff)`, `plot_entropy_convergence(...)`
+- `block_counting.py` — `shannon_entropy(dist)`, `block_entropy_estimates(system, ...)` → `(ks, H_k, h_rate, h_diff)`, `plot_entropy_convergence(...)`, `symbolize_timeseries(series, n_bins, method)` — discretize continuous values into integer symbols
 
 **`results/` — Plots and output files**
 
 **`sims/` — Simulation scripts:**
-- `bernoulli_sim.py` — compares fair vs biased Bernoulli shifts, validates H(k)/k ≈ H(p) for all k
-- `logistic_sim.py` — logistic map (r=4), validates H(k)/k convergence to 1.0 bit (Pesin's identity)
+- `bernoulli_sim.py` — trajectory plots (fair vs biased, 3 seeds) + entropy rate validation H(k)/k ≈ H(p)
+- `logistic_sim.py` — trajectory plots (3 initial conditions) + entropy rate and conditional entropy validation
 
 **Design choices:**
 - Block distributions stored as dicts keyed by tuples

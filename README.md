@@ -62,11 +62,29 @@ That's it. No cooperation, no communication, no strategy beyond "move toward the
 
 Sugarscape demonstrates a core principle of complex systems: **macro-level patterns need not be designed or intended — they can emerge from micro-level rules.** No agent is trying to create inequality. No central planner is distributing resources unfairly. Yet substantial inequality reliably emerges from nothing more than agents with different abilities foraging on a landscape.
 
+### KS Entropy Estimation
+
+Two complementary approaches estimate the KS entropy of the Sugarscape dynamics, providing groundwork for Phase 2 (tunable agent memory).
+
+**Approach 1: Wealth Distribution State** (`scripts/run_entropy_distribution.py`)
+
+At each time step, all 250 agents' sugar values are binned into a histogram (5 bins: 0–10, 10–25, 25–50, 50–100, 100+). This histogram tuple is the symbol for that step. Block counting on the resulting sequence estimates how unpredictable the *macro-level* wealth distribution is from step to step.
+
+Result: The conditional entropy h(k) = H(k) − H(k−1) drops to ~0 after k=2. The aggregate distribution shape is nearly deterministic given the previous step — the economy's macro state has very low entropy rate.
+
+**Approach 2: Individual Agent Wealth Trajectories** (`scripts/run_entropy_agents.py`)
+
+Each agent's sugar is recorded at every step of its lifetime. All trajectories are discretized into 8 symbols using globally-computed quantile bins, and block statistics are pooled across ~24,000 agent lifetimes.
+
+Result: H(k)/k is still declining at k=10 (~0.52 bits), with conditional entropy ~0.19 bits. Individual wealth is genuinely unpredictable — there is real entropy in agent-level dynamics, much more than in the aggregate distribution.
+
 ### Running
 
 ```bash
 cd agent_based_models/sugarscape
-python scripts/run_single.py    # → results/single_run.png
+python scripts/run_single.py                # → results/single_run.png
+python scripts/run_entropy_distribution.py   # → results/distribution_entropy.png
+python scripts/run_entropy_agents.py         # → results/agent_entropy.png
 ```
 
 **Configuration** (in `sim/config.py`):
@@ -106,7 +124,7 @@ ergodic_systems/
 
 **`systems/`** — Each system type gets its own module. `ErgodicSystem` ABC defines the interface (`iterate`, `generate_trajectory`, `sample_initial_state`, plus optional `jacobian`, `symbolize`, `analytical_ks_entropy`). Current implementations: `BernoulliShift` (i.i.d. symbolic process) and `LogisticMap` (continuous, x → r*x*(1-x)).
 
-**`entropy/`** — Each KS entropy estimation method gets its own module. `block_counting.py` implements the box-counting approach: compute block entropies H(k) from empirical symbol frequencies, then estimate the entropy rate as H(k)/k.
+**`entropy/`** — Each KS entropy estimation method gets its own module. `block_counting.py` implements the box-counting approach: compute block entropies H(k) from empirical symbol frequencies, then estimate the entropy rate as H(k)/k. Also provides `symbolize_timeseries()` to discretize continuous time series into integer symbols (quantile or uniform binning).
 
 **`sims/`** — Simulation scripts, one per system. Each produces trajectory visualizations and entropy rate validation plots.
 

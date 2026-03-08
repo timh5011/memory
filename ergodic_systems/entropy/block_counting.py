@@ -2,6 +2,45 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def symbolize_timeseries(series, n_bins=8, method='quantile', bin_edges=None):
+    """Discretize a continuous time series into integer symbols.
+
+    Parameters
+    ----------
+    series : array-like
+        1D array of continuous values.
+    n_bins : int
+        Number of discrete bins.
+    method : str
+        'quantile' (equal-count bins) or 'uniform' (equal-width bins).
+    bin_edges : array-like, optional
+        Pre-computed bin edges (length n_bins+1). If provided, method is ignored.
+
+    Returns
+    -------
+    symbols : np.ndarray of int
+        Integer symbols in [0, n_bins-1].
+    edges : np.ndarray
+        The bin edges used (length n_bins+1).
+    """
+    arr = np.asarray(series, dtype=float)
+    if bin_edges is not None:
+        edges = np.asarray(bin_edges, dtype=float)
+    elif method == 'quantile':
+        percentiles = np.linspace(0, 100, n_bins + 1)
+        edges = np.percentile(arr, percentiles)
+        # Ensure unique edges by nudging duplicates
+        edges[0] = arr.min() - 1e-10
+        edges[-1] = arr.max() + 1e-10
+    elif method == 'uniform':
+        edges = np.linspace(arr.min() - 1e-10, arr.max() + 1e-10, n_bins + 1)
+    else:
+        raise ValueError(f"Unknown method: {method!r}")
+
+    symbols = np.digitize(arr, edges[1:-1])  # returns 0..n_bins-1
+    return symbols, edges
+
+
 def empirical_block_distribution(seq, k):
     """Sliding window counts over a symbolic sequence, normalized to frequencies.
     Returns dict keyed by tuples of length k."""

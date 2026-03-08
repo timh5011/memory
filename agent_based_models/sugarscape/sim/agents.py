@@ -23,6 +23,7 @@ class SugarAgent(mesa.Agent):
         self.vision: int = int(rng.integers(1, model.config.max_vision + 1))
         self.max_age: int = int(rng.integers(60, 101))
         self.age: int = 0
+        self.wealth_history: list[int] = []
 
     def _get_candidate_cells(self) -> list[tuple[int, int]]:
         """Return all cells visible in the 4 cardinal directions plus current cell."""
@@ -69,6 +70,9 @@ class SugarAgent(mesa.Agent):
         self.sugar -= self.metabolism
         self.age += 1
 
+        # Record wealth after metabolism, before death check
+        self.wealth_history.append(self.sugar)
+
         # Death check
         if self.sugar < 0 or self.age > self.max_age:
             self._die_and_replace()
@@ -77,6 +81,10 @@ class SugarAgent(mesa.Agent):
         """Remove this agent and place a fresh one at a random empty cell."""
         model: SugarscapeModel = self.model
         grid = model.grid
+
+        # Save completed wealth trajectory before removal
+        if self.wealth_history:
+            model.completed_trajectories.append(self.wealth_history)
 
         grid.remove_agent(self)
         self.remove()

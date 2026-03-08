@@ -45,6 +45,9 @@ class SugarscapeModel(mesa.Model):
             }
         )
 
+        # Storage for completed agent wealth trajectories (Approach 2 entropy)
+        self.completed_trajectories: list[list[int]] = []
+
         # Place initial agents at random empty cells
         all_cells = [
             (x, y)
