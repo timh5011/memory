@@ -7,18 +7,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 memory/
 ├── agent_based_models/
-│   └── sugarscape/          # Agent-based model of resource competition
+│   ├── sugarscape/          # Agent-based model of resource competition
+│   │   ├── scripts/
+│   │   │   ├── run_single.py
+│   │   │   ├── run_entropy_distribution.py  # Approach 1: distribution-state entropy
+│   │   │   ├── run_entropy_agents.py        # Approach 2: agent-trajectory entropy
+│   │   │   └── run_entropy_lyapunov.py      # Approach 3: Lyapunov exponent via perturbation
+│   │   ├── sim/
+│   │   │   ├── agents.py
+│   │   │   ├── config.py
+│   │   │   ├── grid.py
+│   │   │   ├── metrics.py
+│   │   │   └── model.py
+│   │   └── results/
+│   └── minority_game/       # Minority Game (El Farol Bar Problem)
 │       ├── scripts/
-│       │   ├── run_single.py
-│       │   ├── run_entropy_distribution.py  # Approach 1: distribution-state entropy
-│       │   ├── run_entropy_agents.py        # Approach 2: agent-trajectory entropy
-│       │   └── run_entropy_lyapunov.py      # Approach 3: Lyapunov exponent via perturbation
+│       │   ├── run_single.py        # Single run diagnostic (4-panel plot)
+│       │   ├── run_entropy.py       # KS entropy analysis at M∈{3,6,9}
+│       │   └── run_sweep.py         # THE MONEY PLOT: sweep M, entropy vs efficiency
 │       ├── sim/
-│       │   ├── agents.py
-│       │   ├── config.py
-│       │   ├── grid.py
-│       │   ├── metrics.py
-│       │   └── model.py
+│       │   ├── agents.py            # MinorityGameAgent with S strategy tables
+│       │   ├── config.py            # MinorityGameConfig (N, M, S, α=2^M/N)
+│       │   ├── metrics.py           # volatility, efficiency, predictability
+│       │   └── model.py             # MinorityGameModel (simultaneous moves, no grid)
 │       └── results/
 ├── ergodic_systems/
 │   ├── systems/                     # dynamical system definitions
@@ -51,6 +62,15 @@ cd agent_based_models/sugarscape && python scripts/run_entropy_agents.py
 
 # Sugarscape: Lyapunov exponent via perturbation (50 trials) → results/lyapunov_entropy.png
 cd agent_based_models/sugarscape && python scripts/run_entropy_lyapunov.py
+
+# Minority Game: single run diagnostic (500 steps) → agent_based_models/minority_game/results/single_run.png
+cd agent_based_models/minority_game && python scripts/run_single.py
+
+# Minority Game: KS entropy at M∈{3,6,9} (5000 steps) → results/entropy_analysis.png
+cd agent_based_models/minority_game && python scripts/run_entropy.py
+
+# Minority Game: sweep M=2..12, 20 seeds (THE MONEY PLOT) → results/sweep.png
+cd agent_based_models/minority_game && python scripts/run_sweep.py
 
 # Bernoulli shift → ergodic_systems/results/bernoulli_trajectories.png, bernoulli_entropy_rate.png
 cd ergodic_systems && python sims/bernoulli_sim.py
@@ -91,6 +111,31 @@ SugarscapeConfig  →  SugarscapeModel  →  mesa.DataCollector
 - The grid is `MultiGrid` (multiple agents per cell allowed). Agents do not restrict movement to unoccupied cells — they compete for sugar in random activation order.
 
 **Metrics (`metrics.py`):** `gini()`, `wasserstein_1d()` (earth mover's distance for Lyapunov divergence measurement).
+
+### Agent-Based Models — Minority Game (`agent_based_models/minority_game/`)
+
+The Minority Game (El Farol Bar Problem): N agents simultaneously choose 0 or 1, the minority side wins. Memory length M is the key parameter controlling the phase transition at α_c ≈ 0.34 where α = 2^M / N.
+
+**Data flow:**
+
+```
+MinorityGameConfig  →  MinorityGameModel  →  mesa.DataCollector
+       ↑                      ↑                       ↓
+    config.py              model.py           pandas DataFrame
+                               ↑
+                  MinorityGameAgent (agents.py)
+                  S strategy tables, cumulative scores
+```
+
+**Key design choices:**
+- **No Mesa grid** — agents exist only in `model.agents`, no spatial structure needed
+- **Simultaneous moves** — all agents choose before outcome is revealed (model orchestrates via `choose()` then `update_scores()`)
+- Agents have no `step()` method; the model calls `choose(history_tuple)` and `update_scores(history_tuple, winning_action)` directly
+- Each agent holds S strategy tables (dict mapping M-length binary tuples → 0/1) with cumulative scores; best-scoring strategy is used (random tie-breaking)
+- `model.history` is a `deque(maxlen=M)` of recent winning actions; `model.outcomes` stores full outcome sequence for entropy analysis
+- Binary outcome sequence is the natural symbol sequence — no symbolization/binning needed
+
+**Metrics (`metrics.py`):** `volatility()` (σ²/N), `efficiency()` (1 - σ²/(N/4)), `predictability()` (⟨A²⟩/N - N/4)
 
 ### Ergodic Systems (`ergodic_systems/`)
 
