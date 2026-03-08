@@ -70,7 +70,7 @@ Two complementary approaches estimate the KS entropy of the Sugarscape dynamics,
 
 At each time step, all 250 agents' sugar values are binned into a histogram (5 bins: 0–10, 10–25, 25–50, 50–100, 100+). This histogram tuple is the symbol for that step. Block counting on the resulting sequence estimates how unpredictable the *macro-level* wealth distribution is from step to step.
 
-Result: The conditional entropy h(k) = H(k) − H(k−1) drops to ~0 after k=2. The aggregate distribution shape is nearly deterministic given the previous step — the economy's macro state has very low entropy rate.
+Result: H(k)/k starts at ~12.2 bits (k=1) and decreases as 12.2/k — the total block entropy H(k) barely grows past k=1, meaning the conditional entropy h(k) = H(k) − H(k−1) drops to ~0 after k=2. The aggregate distribution shape is nearly deterministic given the previous step — the economy's macro state has very low entropy rate.
 
 **Approach 2: Individual Agent Wealth Trajectories** (`scripts/run_entropy_agents.py`)
 
