@@ -108,7 +108,7 @@ ergodic_systems/
 
 **`entropy/`** — Each KS entropy estimation method gets its own module. `block_counting.py` implements the box-counting approach: compute block entropies H(k) from empirical symbol frequencies, then estimate the entropy rate as H(k)/k.
 
-**`sims/`** — Simulation scripts, one per system.
+**`sims/`** — Simulation scripts, one per system. Each produces trajectory visualizations and entropy rate validation plots.
 
 **`results/`** — All plots and output files.
 
@@ -116,13 +116,13 @@ ergodic_systems/
 
 ```bash
 cd ergodic_systems
-python sims/bernoulli_sim.py    # → results/bernoulli_entropy_rate.png
-python sims/logistic_sim.py     # → results/logistic_entropy_rate.png
+python sims/bernoulli_sim.py    # → results/bernoulli_trajectories.png, bernoulli_entropy_rate.png
+python sims/logistic_sim.py     # → results/logistic_trajectories.png, logistic_entropy_rate.png
 ```
 
 ### Results
 
-**Bernoulli shift** — Fair coin H(k)/k = 1.0 bits, biased coin H(k)/k = 0.469 bits, both flat for all k. No memory means instant convergence.
+**Bernoulli shift** — Trajectory plots show fair and biased coin sequences from 3 different seeds. Fair coin H(k)/k = 1.0 bits, biased coin H(k)/k = 0.469 bits, both flat for all k. No memory means instant convergence.
 
-**Logistic map (r=4)** — H(k)/k converges to 1.0 bits (= log2(2), matching the Lyapunov exponent ln(2) via Pesin's identity). Unlike Bernoulli, the conditional entropy H(k)-H(k-1) shows gradual convergence from above, reflecting temporal correlations in the symbolized dynamics.
+**Logistic map (r=4)** — Trajectory plots show chaotic evolution from 3 initial conditions. H(k)/k converges to 1.0 bits (= log2(2), matching the Lyapunov exponent ln(2) via Pesin's identity). The conditional entropy H(k)-H(k-1) drops below the analytical value at large k due to finite-sample underestimation — a known limitation of the box-counting method.
 
