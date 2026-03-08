@@ -27,6 +27,14 @@ class ErgodicSystem(ABC):
     def jacobian(self, state):
         raise NotImplementedError(f"{type(self).__name__} does not implement jacobian()")
 
+    def metric(self, state_a, state_b):
+        """Distance between two states. Required for Lyapunov perturbation method."""
+        raise NotImplementedError(f"{type(self).__name__} does not implement metric()")
+
+    def perturb(self, state, delta, rng):
+        """Create a nearby state at distance ~delta. Required for Lyapunov perturbation method."""
+        raise NotImplementedError(f"{type(self).__name__} does not implement perturb()")
+
     def symbolize(self, trajectory, partition=None):
         if self.is_symbolic:
             return trajectory

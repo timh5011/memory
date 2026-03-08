@@ -26,10 +26,12 @@ memory/
 │   │   ├── bernoulli_shift.py       # BernoulliShift
 │   │   └── logistic_map.py          # LogisticMap
 │   ├── entropy/                     # KS entropy computation methods
-│   │   └── block_counting.py        # block entropy estimation and plotting
+│   │   ├── block_counting.py        # block entropy estimation and plotting
+│   │   └── lyapunov.py              # Lyapunov exponent estimation (perturbation + Jacobian)
 │   ├── sims/                        # simulation scripts
 │   │   ├── bernoulli_sim.py
-│   │   └── logistic_sim.py
+│   │   ├── logistic_sim.py
+│   │   └── lyapunov_sim.py          # Lyapunov validation on logistic map
 │   └── results/                     # plots and output
 ├── PHILOSOPHY.md
 └── README.md
@@ -55,6 +57,9 @@ cd ergodic_systems && python sims/bernoulli_sim.py
 
 # Logistic map → ergodic_systems/results/logistic_trajectories.png, logistic_entropy_rate.png
 cd ergodic_systems && python sims/logistic_sim.py
+
+# Lyapunov exponent (logistic map) → ergodic_systems/results/logistic_lyapunov.png
+cd ergodic_systems && python sims/lyapunov_sim.py
 ```
 
 There is no test suite and no linter configured. The project uses standard `anaconda3` Python 3.11. Dependencies: `mesa==3.3.1`, `numpy`, `pandas`, `matplotlib`, `seaborn`, `scipy`.
@@ -92,18 +97,20 @@ SugarscapeConfig  →  SugarscapeModel  →  mesa.DataCollector
 Framework for defining ergodic dynamical systems and computing KS entropy numerically. Organized into three subdirectories:
 
 **`systems/` — Dynamical system definitions:**
-- `ergodic_system.py` — ABC with abstract methods (`iterate`, `generate_trajectory`, `sample_initial_state`) and optional methods (`jacobian`, `symbolize`, `analytical_ks_entropy`)
+- `ergodic_system.py` — ABC with abstract methods (`iterate`, `generate_trajectory`, `sample_initial_state`) and optional methods (`jacobian`, `metric`, `perturb`, `symbolize`, `analytical_ks_entropy`)
 - `bernoulli_shift.py` — `BernoulliShift` subclass (`is_symbolic=True`, `analytical_ks_entropy()` = H(p))
-- `logistic_map.py` — `LogisticMap` subclass (continuous, `symbolize()` via binary partition at 0.5, `analytical_ks_entropy()` = 1.0 bit for r=4 via Pesin's identity)
+- `logistic_map.py` — `LogisticMap` subclass (continuous, `symbolize()` via binary partition at 0.5, `analytical_ks_entropy()` = 1.0 bit for r=4 via Pesin's identity, `metric()`/`perturb()` for Lyapunov estimation)
 
 **`entropy/` — KS entropy computation methods:**
 - `block_counting.py` — `shannon_entropy(dist)`, `block_entropy_estimates(system, ...)` → `(ks, H_k, h_rate, h_diff)`, `plot_entropy_convergence(...)`, `symbolize_timeseries(series, n_bins, method)` — discretize continuous values into integer symbols
+- `lyapunov.py` — `lyapunov_perturbation(system, ...)` (Benettin's algorithm), `lyapunov_jacobian(system, ...)`, `plot_lyapunov_convergence(...)` — works on any `ErgodicSystem` with the required optional methods
 
 **`results/` — Plots and output files**
 
 **`sims/` — Simulation scripts:**
 - `bernoulli_sim.py` — trajectory plots (fair vs biased, 3 seeds) + entropy rate validation H(k)/k ≈ H(p)
 - `logistic_sim.py` — trajectory plots (3 initial conditions) + entropy rate and conditional entropy validation
+- `lyapunov_sim.py` — Lyapunov exponent validation on logistic map (perturbation + Jacobian methods vs analytical ln(2))
 
 **Design choices:**
 - Block distributions stored as dicts keyed by tuples

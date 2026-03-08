@@ -36,6 +36,21 @@ class LogisticMap(ErgodicSystem):
         """Derivative of the map: dT/dx = r(1 - 2x)."""
         return self.r * (1 - 2 * state)
 
+    def metric(self, state_a, state_b):
+        """Absolute difference on [0, 1]."""
+        return abs(state_a - state_b)
+
+    def perturb(self, state, delta, rng):
+        """Shift state by +/-delta, reflecting off [0, 1] boundaries."""
+        sign = rng.choice([-1, 1])
+        x = state + sign * delta
+        # Reflect into [0, 1]
+        if x < 0:
+            x = -x
+        elif x > 1:
+            x = 2 - x
+        return x
+
     def symbolize(self, trajectory, partition=None):
         """Binary partition at x = 0.5 (the critical point)."""
         if partition is None:

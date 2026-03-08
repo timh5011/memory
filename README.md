@@ -124,16 +124,18 @@ ergodic_systems/
 │   ├── bernoulli_shift.py    # BernoulliShift
 │   └── logistic_map.py       # LogisticMap
 ├── entropy/                  # KS entropy computation methods
-│   └── block_counting.py     # block entropy estimation and plotting
+│   ├── block_counting.py     # block entropy estimation and plotting
+│   └── lyapunov.py           # Lyapunov exponent estimation
 ├── sims/                     # simulation/validation scripts
 │   ├── bernoulli_sim.py
-│   └── logistic_sim.py
+│   ├── logistic_sim.py
+│   └── lyapunov_sim.py
 └── results/                  # plots and output
 ```
 
-**`systems/`** — Each system type gets its own module. `ErgodicSystem` ABC defines the interface (`iterate`, `generate_trajectory`, `sample_initial_state`, plus optional `jacobian`, `symbolize`, `analytical_ks_entropy`). Current implementations: `BernoulliShift` (i.i.d. symbolic process) and `LogisticMap` (continuous, x → r*x*(1-x)).
+**`systems/`** — Each system type gets its own module. `ErgodicSystem` ABC defines the interface (`iterate`, `generate_trajectory`, `sample_initial_state`, plus optional `jacobian`, `metric`, `perturb`, `symbolize`, `analytical_ks_entropy`). Current implementations: `BernoulliShift` (i.i.d. symbolic process) and `LogisticMap` (continuous, x → r*x*(1-x), implements `metric`/`perturb` for Lyapunov estimation).
 
-**`entropy/`** — Each KS entropy estimation method gets its own module. `block_counting.py` implements the box-counting approach: compute block entropies H(k) from empirical symbol frequencies, then estimate the entropy rate as H(k)/k. Also provides `symbolize_timeseries()` to discretize continuous time series into integer symbols (quantile or uniform binning).
+**`entropy/`** — Each KS entropy estimation method gets its own module. `block_counting.py` implements the box-counting approach: compute block entropies H(k) from empirical symbol frequencies, then estimate the entropy rate as H(k)/k. Also provides `symbolize_timeseries()` to discretize continuous time series into integer symbols (quantile or uniform binning). `lyapunov.py` estimates the largest Lyapunov exponent via two methods: perturbation with renormalization (Benettin's algorithm, requires `metric`/`perturb`) and Jacobian averaging (requires `jacobian`). Both work generically on any `ErgodicSystem` subclass that implements the required methods.
 
 **`sims/`** — Simulation scripts, one per system. Each produces trajectory visualizations and entropy rate validation plots.
 
@@ -145,6 +147,7 @@ ergodic_systems/
 cd ergodic_systems
 python sims/bernoulli_sim.py    # → results/bernoulli_trajectories.png, bernoulli_entropy_rate.png
 python sims/logistic_sim.py     # → results/logistic_trajectories.png, logistic_entropy_rate.png
+python sims/lyapunov_sim.py     # → results/logistic_lyapunov.png
 ```
 
 ### Results
@@ -152,4 +155,6 @@ python sims/logistic_sim.py     # → results/logistic_trajectories.png, logisti
 **Bernoulli shift** — Trajectory plots show fair and biased coin sequences from 3 different seeds. Fair coin H(k)/k = 1.0 bits, biased coin H(k)/k = 0.469 bits, both flat for all k. No memory means instant convergence.
 
 **Logistic map (r=4)** — Trajectory plots show chaotic evolution from 3 initial conditions. H(k)/k converges to 1.0 bits (= log2(2), matching the Lyapunov exponent ln(2) via Pesin's identity). The conditional entropy H(k)-H(k-1) drops below the analytical value at large k due to finite-sample underestimation — a known limitation of the box-counting method.
+
+**Lyapunov exponent (logistic map)** — Both the perturbation method (Benettin's algorithm) and the Jacobian method converge to λ = ln(2) ≈ 0.6931 nats/step = 1.0 bits/step, matching the analytical value exactly. This validates Pesin's identity (h_KS = λ for smooth 1D maps) and confirms consistency between the block-counting and Lyapunov approaches. The Bernoulli shift is excluded from Lyapunov estimation since it is an i.i.d. symbolic process with no continuous state to perturb.
 
