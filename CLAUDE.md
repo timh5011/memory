@@ -11,7 +11,8 @@ memory/
 │       ├── scripts/
 │       │   ├── run_single.py
 │       │   ├── run_entropy_distribution.py  # Approach 1: distribution-state entropy
-│       │   └── run_entropy_agents.py        # Approach 2: agent-trajectory entropy
+│       │   ├── run_entropy_agents.py        # Approach 2: agent-trajectory entropy
+│       │   └── run_entropy_lyapunov.py      # Approach 3: Lyapunov exponent via perturbation
 │       ├── sim/
 │       │   ├── agents.py
 │       │   ├── config.py
@@ -45,6 +46,9 @@ cd agent_based_models/sugarscape && python scripts/run_entropy_distribution.py
 
 # Sugarscape: KS entropy of agent trajectories (5000 steps) → results/agent_entropy.png
 cd agent_based_models/sugarscape && python scripts/run_entropy_agents.py
+
+# Sugarscape: Lyapunov exponent via perturbation (50 trials) → results/lyapunov_entropy.png
+cd agent_based_models/sugarscape && python scripts/run_entropy_lyapunov.py
 
 # Bernoulli shift → ergodic_systems/results/bernoulli_trajectories.png, bernoulli_entropy_rate.png
 cd ergodic_systems && python sims/bernoulli_sim.py
@@ -81,7 +85,7 @@ SugarscapeConfig  →  SugarscapeModel  →  mesa.DataCollector
 - Each agent tracks `wealth_history` (list of sugar values after each step). On death, `_die_and_replace()` appends the history to `model.completed_trajectories` before removal.
 - The grid is `MultiGrid` (multiple agents per cell allowed). Agents do not restrict movement to unoccupied cells — they compete for sugar in random activation order.
 
-**Metrics (`metrics.py`):** `gini()`, `social_mobility_index()`, `approximate_ks_entropy()`.
+**Metrics (`metrics.py`):** `gini()`, `wasserstein_1d()` (earth mover's distance for Lyapunov divergence measurement).
 
 ### Ergodic Systems (`ergodic_systems/`)
 

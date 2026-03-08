@@ -3,6 +3,30 @@
 import numpy as np
 
 
+def wasserstein_1d(values_a: np.ndarray, values_b: np.ndarray) -> float:
+    """Wasserstein-1 (earth mover's) distance between two 1D empirical distributions.
+
+    For equal-sized samples, W1 = mean of |sorted_a[i] - sorted_b[i]|.
+    This is the optimal transport distance on the real line.
+
+    Chosen over alternatives:
+    - L2 norm on histograms: doesn't respect the ordinal structure of wealth
+      (shifting agents between adjacent bins costs the same as distant bins).
+    - KL divergence: not a true metric (asymmetric, unbounded), undefined when
+      one distribution has zero mass in a bin the other doesn't.
+
+    Wasserstein-1 has a clear physical interpretation: the minimum total wealth
+    that would need to be redistributed to make two economies identical.
+    """
+    a = np.sort(np.asarray(values_a, dtype=float))
+    b = np.sort(np.asarray(values_b, dtype=float))
+    if len(a) != len(b):
+        raise ValueError(
+            f"Both samples must have the same size, got {len(a)} and {len(b)}"
+        )
+    return float(np.mean(np.abs(a - b)))
+
+
 def gini(wealth_array: np.ndarray) -> float:
     """Standard Gini coefficient for a wealth distribution."""
     arr = np.asarray(wealth_array, dtype=float)

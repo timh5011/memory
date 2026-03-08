@@ -64,19 +64,27 @@ Sugarscape demonstrates a core principle of complex systems: **macro-level patte
 
 ### KS Entropy Estimation
 
-Two complementary approaches estimate the KS entropy of the Sugarscape dynamics, providing groundwork for Phase 2 (tunable agent memory).
+Three approaches estimate the KS entropy of the Sugarscape dynamics, providing groundwork for Phase 2 (tunable agent memory). The first two use block counting on symbolic sequences; the third uses Lyapunov exponent estimation via perturbation experiments.
 
 **Approach 1: Wealth Distribution State** (`scripts/run_entropy_distribution.py`)
 
-At each time step, all 250 agents' sugar values are binned into a histogram (5 bins: 0–10, 10–25, 25–50, 50–100, 100+). This histogram tuple is the symbol for that step. Block counting on the resulting sequence estimates how unpredictable the *macro-level* wealth distribution is from step to step.
+We take the entire wealth distribution to be the state of the system. This is a macroscopic description of the system. We can view this state as a state vector or a state distribution. At each time step, all 250 agents' sugar values are binned into a histogram (5 bins: 0–10, 10–25, 25–50, 50–100, 100+). This histogram tuple is the symbol for that step. Block counting on the resulting sequence estimates how unpredictable the *macro-level* wealth distribution is from step to step.
 
 Result: H(k)/k starts at ~12.2 bits (k=1) and decreases as 12.2/k — the total block entropy H(k) barely grows past k=1, meaning the conditional entropy h(k) = H(k) − H(k−1) drops to ~0 after k=2. The aggregate distribution shape is nearly deterministic given the previous step — the economy's macro state has very low entropy rate.
 
 **Approach 2: Individual Agent Wealth Trajectories** (`scripts/run_entropy_agents.py`)
 
-Each agent's sugar is recorded at every step of its lifetime. All trajectories are discretized into 8 symbols using globally-computed quantile bins, and block statistics are pooled across ~24,000 agent lifetimes.
+We look at individual agents' wealth as the system's state. We consider the trajectory of an agents' wealth over time. This is a more microscopic description of the system - there could be some issues with well-definedness of the system's state; are we considering all agents or just one? Each agent's sugar is recorded at every step of its lifetime. All trajectories are discretized into 8 symbols using globally-computed quantile bins, and block statistics are pooled across ~24,000 agent lifetimes.
 
 Result: H(k)/k is still declining at k=10 (~0.52 bits), with conditional entropy ~0.19 bits. Individual wealth is genuinely unpredictable — there is real entropy in agent-level dynamics, much more than in the aggregate distribution.
+
+**Approach 3: Lyapunov Exponent** (`scripts/run_entropy_lyapunov.py`)
+
+Rather than symbolizing the dynamics, this approach directly measures sensitivity to initial conditions. At regular intervals along a baseline simulation, the model is cloned and a small perturbation is applied (δ=1 sugar to one agent). Both copies are run forward and the Wasserstein-1 distance between their wealth distributions is tracked over time. The exponential growth rate of this divergence estimates the largest Lyapunov exponent, which by Pesin's identity bounds the KS entropy from below.
+
+The Wasserstein-1 (earth mover's) distance was chosen as the metric on wealth distributions over alternatives: L2 norm on binned histograms doesn't respect the ordinal structure of wealth (shifting agents between adjacent bins costs the same as distant bins), and KL divergence is not a true metric (asymmetric, unbounded). Wasserstein-1 measures the minimum total wealth that would need to be redistributed to make two economies identical.
+
+Result: λ ≈ 0.063 nats/step (0.091 bits/step), fitted over the initial growth phase (t=1..30) before saturation. The divergence curves show clear exponential growth followed by saturation — a tiny δ=1 perturbation (d(0) = 0.004) grows to d(100) ≈ 4.3. The positive Lyapunov exponent confirms the Sugarscape economy is chaotic: small differences in individual wealth compound into macroscopically different outcomes.
 
 ### Running
 
@@ -85,6 +93,7 @@ cd agent_based_models/sugarscape
 python scripts/run_single.py                # → results/single_run.png
 python scripts/run_entropy_distribution.py   # → results/distribution_entropy.png
 python scripts/run_entropy_agents.py         # → results/agent_entropy.png
+python scripts/run_entropy_lyapunov.py       # → results/lyapunov_entropy.png
 ```
 
 **Configuration** (in `sim/config.py`):
