@@ -88,39 +88,41 @@ python scripts/run_single.py    # → results/single_run.png
 
 A general-purpose framework for defining ergodic dynamical systems and computing their KS entropy numerically.
 
-### Architecture
+### Directory Structure
 
-**`ergodic_system.py`** — Abstract base class for measure-preserving ergodic systems (X, B, mu, T). Defines the interface:
-- `iterate(state)` — apply the map T once
-- `generate_trajectory(initial_state, n_steps, seed)` — produce a trajectory from the invariant measure
-- `sample_initial_state(seed)` — sample from mu
-- Optional: `jacobian()`, `symbolize()`, `analytical_ks_entropy()`
+```
+ergodic_systems/
+├── systems/                  # dynamical system definitions
+│   ├── ergodic_system.py     # ABC: ErgodicSystem base class
+│   ├── bernoulli_shift.py    # BernoulliShift
+│   └── logistic_map.py       # LogisticMap
+├── entropy/                  # KS entropy computation methods
+│   └── block_counting.py     # block entropy estimation and plotting
+├── sims/                     # simulation/validation scripts
+│   ├── bernoulli_sim.py
+│   └── logistic_sim.py
+└── results/                  # plots and output
+```
 
-**`bernoulli_shift.py`** — The Bernoulli shift as a concrete `ErgodicSystem` subclass, plus module-level utility functions:
-- `BernoulliShift(probs)` — i.i.d. process on a finite alphabet with distribution p
-- `make_distribution(probs)` — validate a probability vector
-- `generate_sequence(p, length, seed)` — sample i.i.d. symbols
-- `shift(seq)` — left-shift map
-- `empirical_block_distribution(seq, k)` — sliding window block frequencies
-- `true_block_distribution(p, k)` — exact product measure over k-blocks
+**`systems/`** — Each system type gets its own module. `ErgodicSystem` ABC defines the interface (`iterate`, `generate_trajectory`, `sample_initial_state`, plus optional `jacobian`, `symbolize`, `analytical_ks_entropy`). Current implementations: `BernoulliShift` (i.i.d. symbolic process) and `LogisticMap` (continuous, x → r*x*(1-x)).
 
-**`ks_entropy.py`** — Entropy computation via the box-counting (block entropy) method:
-- `shannon_entropy(dist)` — H = -sum q log2(q) over a distribution dict
-- `block_entropy_estimates(system, n_steps, k_max, seed)` — returns block entropies H(k), entropy rates H(k)/k, and differences H(k) - H(k-1)
-- `plot_entropy_convergence(...)` — visualize H(k)/k vs k with optional analytical reference line
+**`entropy/`** — Each KS entropy estimation method gets its own module. `block_counting.py` implements the box-counting approach: compute block entropies H(k) from empirical symbol frequencies, then estimate the entropy rate as H(k)/k.
 
-**`sim.py`** — Demo/validation script comparing fair coin ([0.5, 0.5]) and biased coin ([0.9, 0.1]) Bernoulli shifts. Both produce flat H(k)/k curves because i.i.d. processes have no memory — the entropy rate equals H(p) for all block lengths k.
+**`sims/`** — Simulation scripts, one per system.
+
+**`results/`** — All plots and output files.
 
 ### Running
 
 ```bash
 cd ergodic_systems
-python sim.py    # → entropy_rate.png
+python sims/bernoulli_sim.py    # → results/bernoulli_entropy_rate.png
+python sims/logistic_sim.py     # → results/logistic_entropy_rate.png
 ```
 
 ### Results
 
-- **Fair coin**: H(k)/k = 1.0 bits for all k
-- **Biased coin**: H(k)/k = 0.469 bits for all k
-- Both flat — Bernoulli processes have zero memory, so convergence to the KS entropy is instant. This validates the framework; systems with temporal correlations (e.g. Markov chains) show non-trivial convergence from above.
+**Bernoulli shift** — Fair coin H(k)/k = 1.0 bits, biased coin H(k)/k = 0.469 bits, both flat for all k. No memory means instant convergence.
+
+**Logistic map (r=4)** — H(k)/k converges to 1.0 bits (= log2(2), matching the Lyapunov exponent ln(2) via Pesin's identity). Unlike Bernoulli, the conditional entropy H(k)-H(k-1) shows gradual convergence from above, reflecting temporal correlations in the symbolized dynamics.
 

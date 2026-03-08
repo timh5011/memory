@@ -1,6 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from bernoulli_shift import empirical_block_distribution
+
+
+def empirical_block_distribution(seq, k):
+    """Sliding window counts over a symbolic sequence, normalized to frequencies.
+    Returns dict keyed by tuples of length k."""
+    counts = {}
+    for i in range(len(seq) - k + 1):
+        block = tuple(seq[i:i + k])
+        counts[block] = counts.get(block, 0) + 1
+    total = sum(counts.values())
+    return {b: c / total for b, c in counts.items()}
 
 
 def shannon_entropy(dist):

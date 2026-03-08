@@ -18,10 +18,16 @@ memory/
 │       │   └── model.py
 │       └── results/
 ├── ergodic_systems/
-│   ├── ergodic_system.py        # ABC: ErgodicSystem base class
-│   ├── bernoulli_shift.py       # BernoulliShift subclass + utility functions
-│   ├── ks_entropy.py            # block entropy estimation and plotting
-│   └── sim.py                   # demo: entropy rate validation for Bernoulli shifts
+│   ├── systems/                     # dynamical system definitions
+│   │   ├── ergodic_system.py        # ABC: ErgodicSystem base class
+│   │   ├── bernoulli_shift.py       # BernoulliShift
+│   │   └── logistic_map.py          # LogisticMap
+│   ├── entropy/                     # KS entropy computation methods
+│   │   └── block_counting.py        # block entropy estimation and plotting
+│   ├── sims/                        # simulation scripts
+│   │   ├── bernoulli_sim.py
+│   │   └── logistic_sim.py
+│   └── results/                     # plots and output
 ├── PHILOSOPHY.md
 └── README.md
 ```
@@ -32,8 +38,11 @@ memory/
 # Sugarscape: single simulation (500 steps) → agent_based_models/sugarscape/results/single_run.png
 cd agent_based_models/sugarscape && python scripts/run_single.py
 
-# Ergodic systems: entropy rate validation → ergodic_systems/entropy_rate.png
-cd ergodic_systems && python sim.py
+# Bernoulli shift: entropy rate validation → ergodic_systems/results/bernoulli_entropy_rate.png
+cd ergodic_systems && python sims/bernoulli_sim.py
+
+# Logistic map: entropy rate convergence → ergodic_systems/results/logistic_entropy_rate.png
+cd ergodic_systems && python sims/logistic_sim.py
 ```
 
 There is no test suite and no linter configured. The project uses standard `anaconda3` Python 3.11. Dependencies: `mesa==3.3.1`, `numpy`, `pandas`, `matplotlib`, `seaborn`, `scipy`.
@@ -67,28 +76,26 @@ SugarscapeConfig  →  SugarscapeModel  →  mesa.DataCollector
 
 ### Ergodic Systems (`ergodic_systems/`)
 
-Framework for defining ergodic dynamical systems and computing KS entropy numerically.
+Framework for defining ergodic dynamical systems and computing KS entropy numerically. Organized into three subdirectories:
 
-**`ergodic_system.py` — Base class:**
-- ABC with abstract methods: `iterate(state)`, `generate_trajectory(initial_state, n_steps, seed)`, `sample_initial_state(seed)`
-- Optional methods (raise `NotImplementedError` by default): `jacobian()`, `symbolize()`, `analytical_ks_entropy()`
+**`systems/` — Dynamical system definitions:**
+- `ergodic_system.py` — ABC with abstract methods (`iterate`, `generate_trajectory`, `sample_initial_state`) and optional methods (`jacobian`, `symbolize`, `analytical_ks_entropy`)
+- `bernoulli_shift.py` — `BernoulliShift` subclass (`is_symbolic=True`, `analytical_ks_entropy()` = H(p)) plus module-level utilities: `make_distribution`, `generate_sequence`, `shift`, `empirical_block_distribution`, `true_block_distribution`
 
-**`bernoulli_shift.py` — BernoulliShift subclass + utilities:**
-- `BernoulliShift(probs)` — i.i.d. process, `is_symbolic=True`, implements `analytical_ks_entropy()` as H(p)
-- Module-level: `make_distribution`, `generate_sequence`, `shift`, `empirical_block_distribution`, `true_block_distribution`
+**`entropy/` — KS entropy computation methods:**
+- `block_counting.py` — `shannon_entropy(dist)`, `block_entropy_estimates(system, ...)` → `(ks, H_k, h_rate, h_diff)`, `plot_entropy_convergence(...)`
 
-**`ks_entropy.py` — Entropy computation:**
-- `shannon_entropy(dist)` — H = -sum q log2(q) over a distribution dict
-- `block_entropy_estimates(system, n_steps, k_max, seed)` — returns `(ks, H_k, h_rate, h_diff)`
-- `plot_entropy_convergence(...)` — H(k)/k vs k visualization
+**`results/` — Plots and output files**
 
-**`sim.py` — Demo/validation:**
-- Compares fair vs biased Bernoulli shifts, validates H(k)/k ≈ H(p) for all k
+**`sims/` — Simulation scripts:**
+- `bernoulli_sim.py` — compares fair vs biased Bernoulli shifts, validates H(k)/k ≈ H(p) for all k
+- `logistic_sim.py` — logistic map (r=4), validates H(k)/k convergence to 1.0 bit (Pesin's identity)
 
 **Design choices:**
 - Block distributions stored as dicts keyed by tuples
 - All randomness via `numpy.random.Generator` with explicit seeds
 - `ErgodicSystem` subclasses only implement what they need (optional methods not abstract)
+- Imports use package-relative paths (`from systems import BernoulliShift`, `from entropy import block_entropy_estimates`)
 
 ## Research context
 
