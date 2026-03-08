@@ -22,6 +22,53 @@ We need to define metrics that capture what progress means for a society and how
 
 ---
 
+I now want to introduce another agent based model into the directory. I initially choise sugarscape because it was described to me as the "hello world" of agent based modelling. it was a good choice. I would like my next abm to also be fairly standard and simple, but I would like it to be better suited to calculating the KS entropy of and doing analysis on how the KS entropy impacts some success parameter. before we choose one, lets look at what was good and bad about sugarscape. initially, I see that sugarscape was good because it was simple and it had the "wealth" variable for agents, as well as the gini coeff and wealth distributions for the entire population. we also could have run more experiments where we played with agent parameters (vision, etc) and see how those impacted the KS entropy and wealth of the agents. we didnt do this. maybe we will later, but not now. the thing that was not god about sugarscape was there was no true success metric or social wellbeing metric. there were also not clear parameters of the entire system that we could tune that would impact KS entropy. please expand on this frame of though to determine what was god and bad about sugarscaoe for the sake of our KS entropy analysis 
+
+---
+
+## Sugarscape Retrospective and Next Model Selection
+
+### What Sugarscape Did Well
+
+Sugarscape provided a clean continuous observable for entropy analysis — each agent's wealth (sugar) is a single scalar that changes every step, making symbolization straightforward. Simple behavioral rules (move-to-best-sugar) produced emergent complexity: realistic wealth distributions with Gini coefficients around 0.5, right-skewed wealth, and natural population turnover. The model supported multi-scale entropy analysis: macro-level (wealth distribution state), micro-level (individual agent trajectories), and perturbation-based (Lyapunov exponent via Wasserstein-1 divergence). Spatial structure on a toroidal grid created natural locality and competition.
+
+### What Sugarscape Did Poorly for KS Entropy Research
+
+**No clear success metric.** The Gini coefficient measures inequality but isn't normative — it's descriptive. We can say "inequality emerged" but can't ask "what KS entropy maximizes social welfare?" because we never defined welfare. We need a model with a clear, defensible outcome metric that we can plot *against* KS entropy.
+
+**No parameter that directly tunes KS entropy.** The tunable parameters (alpha, vision, metabolism ranges) affect dynamics indirectly and in tangled ways. There's no single knob that maps cleanly to "how much memory/predictability does the system have." We need a sweep variable for the x-axis of an "entropy vs. success" plot.
+
+**No strategic agent-agent interaction.** Sugarscape agents forage independently on a shared resource. There's no cooperation, defection, communication, or game-theoretic tension. This means there's no mechanism by which one agent's *memory of other agents* matters.
+
+**Macro-level entropy was trivially low.** The wealth distribution is nearly deterministic step-to-step (~0 bits conditional entropy after k=2). The interesting dynamics are all at the individual level, but individual trajectories are hard to connect to a collective outcome.
+
+**Agent heterogeneity confounds pooled entropy estimates.** Agents have different vision/metabolism, so pooling their trajectories mixes fundamentally different stochastic processes. The entropy estimate is an average over agent types, not the entropy of a single well-defined process.
+
+### Candidate Models Evaluated
+
+Three models were considered as the next ABM:
+
+**Minority Game / El Farol Bar Problem.** N agents choose one of two options each round; minority wins. Each agent holds S strategies (lookup tables mapping the last M rounds to an action). Memory length M is the central parameter, controlling α = 2^M / N, which drives a sharp phase transition at α_c ≈ 0.34. Success metric: volatility (variance of attendance) — low volatility = efficient resource utilization. Cleanest parameter→entropy mapping. Simplest implementation (~100 lines). No spatial structure.
+
+**Spatial Iterated Prisoner's Dilemma.** Agents on a 2D grid play cooperate/defect with neighbors. Payoffs accumulate; agents imitate high-payoff neighbors. Mutation rate μ tunes stochasticity. Success metric: cooperation rate. Canonical and well-studied, but memory→entropy mapping is indirect and there's no sharp critical point.
+
+**Public Goods Game with Punishment.** Agents contribute to a shared pool (multiplied and split equally) and can pay to punish low contributors. Multiple candidate parameters for entropy tuning (mutation rate, punishment cost, memory of past defectors), creating ambiguity. Success metrics can conflict: high cooperation ≠ high welfare (punishment is costly). Most complex implementation (~250 lines).
+
+### Selection: Minority Game
+
+The Minority Game was selected because it directly addresses every Sugarscape weakness:
+
+- **Clear success metric:** volatility/efficiency — how well agents collectively utilize a shared resource
+- **Single parameter that directly tunes entropy:** memory length M drives a sharp phase transition between chaotic (high entropy, high volatility) and ordered (low entropy, low volatility) regimes
+- **Strategic interaction:** agents counter-predict each other; memory of past outcomes directly determines strategy selection
+- **Memory IS the model's central concept** — not a bolt-on parameter
+
+The main tradeoff is no spatial structure, but this isolates the memory→entropy→success relationship without spatial confounds.
+
+The key experiment will be sweeping M, computing KS entropy at each value, and plotting entropy against efficiency — producing the "money plot" that answers: *what level of system memory optimizes collective outcomes?*
+
+---
+
 ## Appendix: Ergodic Theory
 
 ### Mixing

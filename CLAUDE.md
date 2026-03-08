@@ -118,6 +118,4 @@ Framework for defining ergodic dynamical systems and computing KS entropy numeri
 - `ErgodicSystem` subclasses only implement what they need (optional methods not abstract)
 - Imports use package-relative paths (`from systems import BernoulliShift`, `from entropy import block_entropy_estimates`)
 
-## Research context
 
-The long-term goal is to find the KS entropy that maximizes a meritocracy/social-mobility metric. The Sugarscape model is the **Phase 1 baseline** — standard model, no agent memory. The Bernoulli shift experiment validates the theoretical relationship between entropy and convergence rates. Phase 2 will add explicit agent memory (history-weighted movement decisions) as a tunable parameter directly linked to KS entropy. See `PHILOSOPHY.md` for the ergodic theory framework and `README.md` for full project description.
