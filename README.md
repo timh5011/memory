@@ -18,6 +18,10 @@ I aim to answer the questions: how much memory is optimal for growth? How far ba
     - [The Phase Transition](#the-phase-transition)
     - [KS Entropy Analysis](#ks-entropy-analysis)
     - [Entropy vs Efficiency](#entropy-vs-efficiency)
+- [Neural Network Training Dynamics](#neural-network-training-dynamics-ml)
+  - [The Dynamical System](#the-dynamical-system)
+  - [Lyapunov Exponents via Hessian-Vector Products](#lyapunov-exponents-via-hessian-vector-products)
+  - [Experimental Design](#experimental-design)
 - [Ergodic Systems](#ergodic-systems)
   - [Framework](#framework-ergodic_systems)
   - [Results](#results)
@@ -27,6 +31,7 @@ I aim to answer the questions: how much memory is optimal for growth? How far ba
 This project contains two categories of computational experiments:
 
 - **Agent-Based Models** (`agent_based_models/`) — simulations of interacting agents that produce emergent social phenomena
+- **Neural Network Training Dynamics** (`ml/`) — treating gradient descent as a dynamical system and measuring its KS entropy via Lyapunov exponents
 - **Ergodic Systems** (`ergodic_systems/`) — direct experiments on dynamical systems from ergodic theory
 
 See `PHILOSOPHY.md` for the full theoretical framework connecting KS entropy, mixing, and Bernoulli shifts.
@@ -211,6 +216,60 @@ python scripts/run_sweep.py      # → results/sweep_phase_transition.png, sweep
 | `n_steps` | 500 | Simulation length |
 | `seed` | 42 | Random seed for reproducibility |
 | `alpha` (property) | 2^M/N | Complexity ratio controlling the phase transition |
+
+---
+
+# Neural Network Training Dynamics (`ml/`)
+
+This experiment extends the project's central question — *how much forgetting is optimal for a system to make progress?* — to machine learning. We treat the gradient descent training process of a neural network as a discrete-time dynamical system on weight space and measure its KS entropy via Lyapunov exponents. The goal is to determine whether there is an optimal "forgetting rate" (KS entropy) that produces the best learning outcomes.
+
+### The Dynamical System
+
+The state of the system at time $t$ is the full weight vector $\theta_t \in \mathbb{R}^d$. The dynamics are defined by the gradient descent update rule:
+
+$$\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)$$
+
+Each training step is one iteration of the map. We use full-batch gradient descent (autonomous dynamics) on a synthetic 3-class spiral dataset, with a 2-layer MLP (~4,500 parameters). The spiral dataset provides a nontrivial classification problem that is fast to train and easy to visualize.
+
+### Lyapunov Exponents via Hessian-Vector Products
+
+The Jacobian of one gradient descent step is $J = I - \eta H$, where $H$ is the Hessian of the loss. A positive Lyapunov exponent means nearby weight configurations diverge (the system "forgets" its initial conditions); a negative exponent means they converge (the system "remembers").
+
+We compute the top-$k$ Lyapunov exponents using a modified Benettin algorithm. The key trick: rather than forming the full $d \times d$ Hessian, we propagate tangent vectors using Hessian-vector products ($H \cdot v$) via PyTorch's double-backward trick. This costs roughly one additional backward pass per tangent vector per step. Every $R$ steps, the tangent vectors are reorthonormalized via QR decomposition, and the diagonal of $R$ accumulates the stretching rates.
+
+KS entropy is then estimated via Pesin's formula: $h_{KS} = \sum_{\lambda_i > 0} \lambda_i$
+
+### Experimental Design
+
+**Control variable:** Learning rate $\eta$, swept log-uniformly from $10^{-4}$ to $1.0$ (20 values).
+
+**Hypothesis:** There is an optimal KS entropy that minimizes convergence time — too low means slow exploration, too high means chaotic/divergent dynamics.
+
+**Pipeline:**
+1. `data.py` — generate spiral dataset
+2. `model.py` — MLP with parameter flattening utilities
+3. `lyapunov.py` — `LyapunovTracker` with Hessian-vector products
+4. `train.py` — training loop with integrated Lyapunov tracking
+5. `experiment.py` — sweep learning rates × random seeds
+6. `analyze.py` — generate analysis plots
+
+**Plots produced:**
+- KS entropy vs convergence rate (primary result)
+- KS entropy vs final train/test loss
+- KS entropy time series showing exploration→exploitation transition
+- Full Lyapunov spectrum vs learning rate
+- Training loss curves across learning rates
+
+### Running
+
+```bash
+cd ml
+python train.py          # Quick single-run test
+python experiment.py     # Full sweep (~2-3 min on MacBook)
+python analyze.py        # Generate all plots → results/
+```
+
+See `ml/PLAN.md` for the full theoretical specification.
 
 ---
 

@@ -44,6 +44,15 @@ memory/
 │   │   ├── logistic_sim.py
 │   │   └── lyapunov_sim.py          # Lyapunov validation on logistic map
 │   └── results/                     # plots and output
+├── ml/                          # KS entropy of neural network training dynamics
+│   ├── data.py                  # Synthetic spiral dataset generator
+│   ├── model.py                 # MLP definition + param flattening
+│   ├── lyapunov.py              # Benettin algorithm with Hessian-vector products
+│   ├── train.py                 # Training loop with Lyapunov tracking
+│   ├── experiment.py            # LR sweep runner (multiple seeds)
+│   ├── analyze.py               # Analysis and plotting
+│   ├── PLAN.md                  # Full theoretical spec
+│   └── results/                 # Plots and experiment data
 ├── PHILOSOPHY.md
 └── README.md
 ```
@@ -80,9 +89,18 @@ cd ergodic_systems && python sims/logistic_sim.py
 
 # Lyapunov exponent (logistic map) → ergodic_systems/results/logistic_lyapunov.png
 cd ergodic_systems && python sims/lyapunov_sim.py
+
+# ML: single training run (quick test) → prints loss, KS entropy
+cd ml && python train.py
+
+# ML: full LR sweep experiment (20 LRs × 5 seeds × 500 steps) → ml/results/experiment_results.pkl
+cd ml && python experiment.py
+
+# ML: analyze results → ml/results/ks_vs_convergence.png, ks_vs_loss.png, etc.
+cd ml && python analyze.py
 ```
 
-There is no test suite and no linter configured. The project uses standard `anaconda3` Python 3.11. Dependencies: `mesa==3.3.1`, `numpy`, `pandas`, `matplotlib`, `seaborn`, `scipy`.
+There is no test suite and no linter configured. The project uses standard `anaconda3` Python 3.11. Dependencies: `mesa==3.3.1`, `numpy`, `pandas`, `matplotlib`, `seaborn`, `scipy`, `torch`.
 
 ## Architecture
 
@@ -162,5 +180,34 @@ Framework for defining ergodic dynamical systems and computing KS entropy numeri
 - All randomness via `numpy.random.Generator` with explicit seeds
 - `ErgodicSystem` subclasses only implement what they need (optional methods not abstract)
 - Imports use package-relative paths (`from systems import BernoulliShift`, `from entropy import block_entropy_estimates`)
+
+### ML — Neural Network Training Dynamics (`ml/`)
+
+Treats gradient descent as a dynamical system on weight space. Measures KS entropy via Lyapunov exponents (Pesin's identity) to find whether there's an optimal "forgetting rate" for learning.
+
+**Data flow:**
+
+```
+TrainingConfig → run_training() → TrainingResult
+                      ↑                  ↓
+              MLP + LyapunovTracker    loss curves, Lyapunov spectra,
+              make_spirals()           KS entropy timeseries
+```
+
+**Key design choices:**
+- Full-batch gradient descent (autonomous dynamics, clean Lyapunov computation)
+- Manual SGD (no optimizer) — weights updated via `p -= lr * p.grad`
+- Lyapunov exponents via modified Benettin: tangent vectors propagated as `v <- v - lr * (H @ v)` where H is the Hessian
+- Hessian-vector products via double-backward trick (never forms full Hessian)
+- Tangent vectors stored as d×k matrix, reorthonormalized via QR every R steps
+- MLP with `flat_params()` / `load_flat_params()` for parameter flattening
+- All computation on CPU (MacBook target, ~4500 parameters)
+- Primary control variable: learning rate (log-spaced sweep 1e-4 to 1.0)
+
+**Key files:**
+- `lyapunov.py` — `hessian_vector_product()` and `LyapunovTracker` class (core algorithmic contribution)
+- `train.py` — `TrainingConfig` / `TrainingResult` dataclasses, `run_training()` loop
+- `experiment.py` — `run_experiment()` LR sweep with multiple seeds
+- `analyze.py` — 5 plots: KS vs convergence, KS vs loss, KS timeseries, Lyapunov spectrum, loss curves
 
 
