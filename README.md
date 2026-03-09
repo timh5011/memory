@@ -261,6 +261,7 @@ KS entropy is then estimated via Pesin's formula: $h_{KS} = \sum_{\lambda_i > 0}
 **Plots produced (`results/`):**
 - `ks_vs_convergence.png` — two-panel plot: left shows KS entropy vs convergence step; right shows learning rate vs convergence step with a mean line tracing the U-shape. The right panel is the cleaner view of the primary result because KS entropy is not monotonically ordered by LR in the divergent regime.
 - `ks_vs_loss.png` — KS entropy vs final train and test loss
+- `ks_vs_lr.png` — KS entropy vs learning rate (mean ± std across seeds). Shows that KS entropy is mostly monotone in LR across the convergent regime, but breaks down at very high LRs where the dynamics become chaotic and the Lyapunov estimates are unreliable. Useful companion to `ks_vs_convergence` — together they show LR → KS entropy → convergence.
 - `ks_timeseries.png` — KS entropy evolution during training for representative LRs
 - `lyapunov_spectrum.png` — top-k Lyapunov exponents vs learning rate (mean ± std)
 - `loss_curves.png` — training loss vs step for different LRs

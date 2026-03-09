@@ -218,6 +218,28 @@ def plot_lyapunov_spectrum(results, save_path="results/lyapunov_spectrum.png"):
     plt.close(fig)
 
 
+def plot_ks_vs_lr(results, save_path="results/ks_vs_lr.png"):
+    """Plot: KS entropy vs learning rate (mean ± std across seeds)."""
+    by_lr = aggregate_by_lr(results)
+    lrs = sorted(by_lr.keys())
+
+    mean_ks = np.array([np.mean([r.ks_entropy_final for r in by_lr[lr]]) for lr in lrs])
+    std_ks = np.array([np.std([r.ks_entropy_final for r in by_lr[lr]]) for lr in lrs])
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    ax.errorbar(lrs, mean_ks, yerr=std_ks, fmt="o-", color="steelblue",
+                markersize=4, linewidth=1.5, capsize=3, elinewidth=1)
+    ax.fill_between(lrs, mean_ks - std_ks, mean_ks + std_ks, alpha=0.15, color="steelblue")
+    ax.set_xscale("log")
+    ax.set_xlabel("Learning rate")
+    ax.set_ylabel("KS entropy (nats/step)")
+    ax.set_title("KS Entropy vs Learning Rate (mean ± std across seeds)")
+    ax.grid(True, alpha=0.3)
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
+    print(f"Saved: {save_path}")
+    plt.close(fig)
+
+
 def plot_loss_curves(results, save_path="results/loss_curves.png"):
     """Plot 5: Training loss curves for different LRs."""
     by_lr = aggregate_by_lr(results)
@@ -286,6 +308,7 @@ if __name__ == "__main__":
 
     plot_ks_vs_convergence(results)
     plot_ks_vs_loss(results)
+    plot_ks_vs_lr(results)
     plot_ks_timeseries(results)
     plot_lyapunov_spectrum(results)
     plot_loss_curves(results)

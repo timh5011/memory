@@ -93,7 +93,7 @@ cd ergodic_systems && python sims/lyapunov_sim.py
 # ML: single training run (quick test) → prints loss, KS entropy
 cd ml && python train.py
 
-# ML: full LR sweep experiment (20 LRs × 5 seeds × 500 steps) → ml/results/experiment_results.pkl
+# ML: full LR sweep experiment (25 LRs × 5 seeds × 500 steps) → ml/results/experiment_results.pkl
 cd ml && python experiment.py
 
 # ML: analyze results → ml/results/ks_vs_convergence.png, ks_vs_loss.png, etc.
@@ -208,6 +208,6 @@ TrainingConfig → run_training() → TrainingResult
 - `lyapunov.py` — `hessian_vector_product()` and `LyapunovTracker` class (core algorithmic contribution)
 - `train.py` — `TrainingConfig` / `TrainingResult` dataclasses, `run_training()` loop
 - `experiment.py` — `run_experiment()` LR sweep with multiple seeds
-- `analyze.py` — 5 plots: KS vs convergence, KS vs loss, KS timeseries, Lyapunov spectrum, loss curves
+- `analyze.py` — 6 plots: KS vs convergence (2-panel), KS vs loss, KS vs LR, KS timeseries, Lyapunov spectrum, loss curves
 
 
