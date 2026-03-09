@@ -241,9 +241,14 @@ KS entropy is then estimated via Pesin's formula: $h_{KS} = \sum_{\lambda_i > 0}
 
 ### Experimental Design
 
-**Control variable:** Learning rate $\eta$, swept log-uniformly from $10^{-4}$ to $1.0$ (20 values).
+**Control variable:** Learning rate $\eta$, swept log-uniformly from $10^{-4}$ to $10.0$ (25 values), covering three regimes:
+- **Too slow** (small $\eta$): nearly no progress, low KS entropy
+- **Sweet spot** (moderate $\eta$): fast convergence, intermediate KS entropy
+- **Divergent** (large $\eta$): loss increases or oscillates above random chance, high KS entropy
 
-**Hypothesis:** There is an optimal KS entropy that minimizes convergence time — too low means slow exploration, too high means chaotic/divergent dynamics.
+**Hypothesis:** There is an optimal KS entropy that minimizes convergence time — too low means slow exploration, too high means chaotic dynamics that prevent settling.
+
+**Convergence step** is defined as the first training step at which a run's training loss drops to or below the 25th percentile of all final training losses across the entire sweep. This is a relative threshold: it asks "when did this run get as good as the better runs eventually got?" Runs that never reach the target within 500 steps are recorded as not converged and plotted at 500.
 
 **Pipeline:**
 1. `data.py` — generate spiral dataset
@@ -253,12 +258,12 @@ KS entropy is then estimated via Pesin's formula: $h_{KS} = \sum_{\lambda_i > 0}
 5. `experiment.py` — sweep learning rates × random seeds
 6. `analyze.py` — generate analysis plots
 
-**Plots produced:**
-- KS entropy vs convergence rate (primary result)
-- KS entropy vs final train/test loss
-- KS entropy time series showing exploration→exploitation transition
-- Full Lyapunov spectrum vs learning rate
-- Training loss curves across learning rates
+**Plots produced (`results/`):**
+- `ks_vs_convergence.png` — two-panel plot: left shows KS entropy vs convergence step; right shows learning rate vs convergence step with a mean line tracing the U-shape. The right panel is the cleaner view of the primary result because KS entropy is not monotonically ordered by LR in the divergent regime.
+- `ks_vs_loss.png` — KS entropy vs final train and test loss
+- `ks_timeseries.png` — KS entropy evolution during training for representative LRs
+- `lyapunov_spectrum.png` — top-k Lyapunov exponents vs learning rate (mean ± std)
+- `loss_curves.png` — training loss vs step for different LRs
 
 ### Running
 

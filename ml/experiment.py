@@ -35,7 +35,7 @@ def run_experiment(lr_values=None, n_seeds=5, n_steps=500,
         All results from all runs.
     """
     if lr_values is None:
-        lr_values = np.logspace(-4, 0, 20).tolist()
+        lr_values = np.logspace(-4, 1, 25).tolist()  # 1e-4 to 10.0, 25 values
 
     results = []
     total = len(lr_values) * n_seeds
@@ -79,9 +79,9 @@ def run_experiment(lr_values=None, n_seeds=5, n_steps=500,
 
 
 if __name__ == "__main__":
-    # Full experiment
+    # Full experiment: 1e-4 to 10.0, covering convergent and divergent regimes
     results = run_experiment(
-        lr_values=np.logspace(-4, 0, 20).tolist(),
+        lr_values=np.logspace(-4, 1, 25).tolist(),
         n_seeds=5,
         n_steps=500,
         k_exponents=10,

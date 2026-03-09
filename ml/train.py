@@ -37,6 +37,8 @@ class TrainingResult:
     ks_entropy_timeseries: np.ndarray  # windowed KS entropy (n_windows,)
     ks_entropy_final: float
     convergence_step: Optional[int]
+    diverged: bool  # True if loss became NaN/inf during training
+    divergence_step: Optional[int]  # step at which divergence was detected
     final_train_loss: float
     final_test_loss: float
     final_test_accuracy: float
@@ -76,6 +78,8 @@ def run_training(config: TrainingConfig) -> TrainingResult:
     test_loss_curve = []
     test_accuracy_curve = []
     convergence_step = None
+    diverged = False
+    divergence_step = None
 
     for step in range(config.n_steps):
         # Define loss function (closure for HVP)
@@ -85,6 +89,13 @@ def run_training(config: TrainingConfig) -> TrainingResult:
         # Compute loss and gradients for the weight update
         loss = loss_fn()
         loss_val = loss.item()
+
+        # Detect divergence
+        if not np.isfinite(loss_val):
+            diverged = True
+            divergence_step = step
+            break
+
         loss_curve.append(loss_val)
 
         # Check convergence
@@ -113,11 +124,16 @@ def run_training(config: TrainingConfig) -> TrainingResult:
                 test_accuracy_curve.append(test_acc)
 
     # Final metrics
-    with torch.no_grad():
-        final_train_loss = F.nll_loss(model(X_train), y_train).item()
-        test_out = model(X_test)
-        final_test_loss = F.nll_loss(test_out, y_test).item()
-        final_test_accuracy = (test_out.argmax(dim=1) == y_test).float().mean().item()
+    if diverged:
+        final_train_loss = float("inf")
+        final_test_loss = float("inf")
+        final_test_accuracy = float("nan")
+    else:
+        with torch.no_grad():
+            final_train_loss = F.nll_loss(model(X_train), y_train).item()
+            test_out = model(X_test)
+            final_test_loss = F.nll_loss(test_out, y_test).item()
+            final_test_accuracy = (test_out.argmax(dim=1) == y_test).float().mean().item()
 
     # Lyapunov results
     lyap_exponents = tracker.get_exponents()
@@ -134,6 +150,8 @@ def run_training(config: TrainingConfig) -> TrainingResult:
         ks_entropy_timeseries=ks_ts,
         ks_entropy_final=ks_entropy,
         convergence_step=convergence_step,
+        diverged=diverged,
+        divergence_step=divergence_step,
         final_train_loss=final_train_loss,
         final_test_loss=final_test_loss,
         final_test_accuracy=final_test_accuracy,
