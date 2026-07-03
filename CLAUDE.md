@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 memory/
+├── doc/                     # High-level project docs — READ PHILOSOPHY.md FIRST
+│   ├── PHILOSOPHY.md                     # Theoretical framework: memory, mixing, KS entropy
+│   ├── ks_entropy_in_research_literature.md
+│   ├── Claude Sociophysics Survey.md
+│   └── tool_report_camel_oasis_mirofish.md  # CAMEL/OASIS/MiroFish survey behind llm_abm/
+├── llm_abm/                 # LLM agent-based Minority Game (memory window sweep)
+│   ├── sim/                 # config, prompts, backends (mock/CAMEL), agents, model, metrics
+│   ├── analysis/            # ks_entropy.py — block entropy of outcome sequences
+│   ├── scripts/             # run_mock_single.py, run_sweep_memory.py, estimate_tokens.py
+│   └── results/
+├── ml_ergodic/              # NN training wrapped as an ErgodicSystem
+│   ├── system.py            # GradientDescentSystem(ErgodicSystem)
+│   ├── scripts/             # run_block_entropy.py, run_lyapunov_perturbation.py, run_ergodicity.py
+│   └── results/
+└── basic/                   # everything below lives under basic/
+```
+
+```
+basic/
 ├── agent_based_models/
 │   ├── sugarscape/          # Agent-based model of resource competition
 │   │   ├── scripts/
@@ -53,11 +72,25 @@ memory/
 │   ├── analyze.py               # Analysis and plotting
 │   ├── PLAN.md                  # Full theoretical spec
 │   └── results/                 # Plots and experiment data
-├── PHILOSOPHY.md
-└── README.md
+└── ergodic_systems/THEORY.md    # KS entropy computation methods reference (never delete)
 ```
 
 ## Commands
+
+All `basic/` paths below are relative to `basic/` (e.g. `cd basic/agent_based_models/sugarscape`).
+
+```bash
+# LLM ABM: free mock pipeline (no API calls, no cost) → llm_abm/results/
+cd llm_abm && python scripts/run_mock_single.py
+cd llm_abm && python scripts/run_sweep_memory.py            # mock memory-window sweep
+cd llm_abm && python scripts/estimate_tokens.py             # usage estimate before live runs
+# Live LLM runs require camel-ai + API key + explicit --live flag; NEVER run without user approval
+
+# ML-as-ergodic-system → ml_ergodic/results/
+cd ml_ergodic && python scripts/run_block_entropy.py        # entropy rate of loss signal vs lr
+cd ml_ergodic && python scripts/run_lyapunov_perturbation.py # Benettin λ_max vs lr
+cd ml_ergodic && python scripts/run_ergodicity.py           # Birkhoff + mixing checks
+```
 
 ```bash
 # Sugarscape: single simulation (500 steps) → agent_based_models/sugarscape/results/single_run.png
@@ -211,3 +244,25 @@ TrainingConfig → run_training() → TrainingResult
 - `analyze.py` — 6 plots: KS vs convergence (2-panel), KS vs loss, KS vs LR, KS timeseries, Lyapunov spectrum, loss curves
 
 
+
+### LLM Agent-Based Models (`llm_abm/`)
+
+The Minority Game with LLM-powered agents (see `llm_abm/README.md` and `doc/tool_report_camel_oasis_mirofish.md`). The tunable memory parameter is `memory_window` (w) — the number of past rounds rendered into each agent's prompt.
+
+**Key design choices:**
+- **Memory is external and researcher-controlled**: every backend call is stateless single-turn; the prompt IS the agent's memory (no CAMEL ChatHistoryMemory), so w is an exact experimental variable
+- **Backend abstraction** (`sim/backends.py`): `MockBackend` (free, local, rule-based policy mixture — the whole pipeline runs at zero cost) and `CamelBackend` (CAMEL ChatAgent; untested until camel-ai installed)
+- **Money guardrails**: `CamelBackend` requires `allow_api_calls=True`; sweep script requires `--live`; `build_backend()` only auto-builds mock. NEVER trigger paid runs without explicit user approval
+- Personas cycled across agents (LLM analog of random strategy tables); binary outcome sequence feeds block-counting entropy directly (reuses `basic/ergodic_systems/entropy` via sys.path)
+- Transcripts logged as JSONL; run records as JSON in `results/runs/` so analysis never requires re-running
+- Metrics duplicated verbatim from the classical MG for direct comparability
+
+### ML Training as an Ergodic System (`ml_ergodic/`)
+
+`GradientDescentSystem(ErgodicSystem)` wraps full-batch GD on the `basic/ml` MLP+spirals as a first-class ergodic system (see `ml_ergodic/README.md`). Complements `basic/ml`'s Pesin/HVP route with the symbolic route.
+
+**Key design choices:**
+- Imports `basic/ml` (`model.py`, `data.py`) and `basic/ergodic_systems` via sys.path — no code duplication
+- `symbolize()` = scalar observable (loss by default) + quantile binning → entropy rate is a lower bound h(T,P) ≤ h_KS
+- Implements `metric()`/`perturb()` so the generic `lyapunov_perturbation` (Benettin) works unchanged — independent cross-check of `basic/ml`'s HVP exponents
+- `run_ergodicity.py` empirically tests the ergodicity caveat in `basic/ml/PLAN.md` §3: Birkhoff time-averages across seeds + autocorrelation decay (mixing proxy)

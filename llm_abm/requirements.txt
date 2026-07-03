@@ -1,0 +1,8 @@
+# Core (already in the project's anaconda environment)
+numpy
+matplotlib
+
+# Optional — needed ONLY for live LLM runs (CamelBackend).
+# Installing this costs nothing, but running it requires an API key and
+# spends usage credits. The mock pipeline works without it.
+# camel-ai>=0.2

@@ -36,6 +36,11 @@ This project contains two categories of computational experiments:
 
 See `PHILOSOPHY.md` for the full theoretical framework connecting KS entropy, mixing, and Bernoulli shifts.
 
+Two newer experiment tracks build on the above (each has its own README):
+
+- **LLM Agent-Based Models** (`llm_abm/`) — the Minority Game with LLM-powered agents (via CAMEL), where the memory window of each agent's prompt is the tunable memory parameter. Includes a free mock backend so the full pipeline — simulation, transcripts, metrics, KS entropy analysis, memory sweeps — runs locally at zero cost before any API call. See `llm_abm/README.md` and `doc/tool_report_camel_oasis_mirofish.md`.
+- **ML Training as an Ergodic System** (`ml_ergodic/`) — wraps gradient descent as an `ErgodicSystem` so the block-counting and Benettin tools apply to training trajectories directly, plus empirical ergodicity/mixing checks (Birkhoff time-averages, correlation decay). Complements `ml/`'s Pesin-route estimates. See `ml_ergodic/README.md`.
+
 ---
 
 # Agent-Based Models
