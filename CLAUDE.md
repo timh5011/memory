@@ -11,10 +11,14 @@ memory/
 │   ├── ks_entropy_in_research_literature.md
 │   ├── Claude Sociophysics Survey.md
 │   └── tool_report_camel_oasis_mirofish.md  # CAMEL/OASIS/MiroFish survey behind llm_abm/
-├── llm_abm/                 # LLM agent-based Minority Game (memory window sweep)
-│   ├── sim/                 # config, prompts, backends (mock/CAMEL), agents, model, metrics
-│   ├── analysis/            # ks_entropy.py — block entropy of outcome sequences
-│   ├── scripts/             # run_mock_single.py, run_sweep_memory.py, estimate_tokens.py
+├── llm_abm/                 # LLM agent-based models (Minority Game + Polis society)
+│   ├── sim/                 # MG: config, prompts, backends (mock/CAMEL), agents, model, metrics
+│   ├── society/             # Polis: minimally complete LLM society (identities, value
+│   │                        #   weights, world engine, two memory knobs) — see its README.md
+│   ├── analysis/            # ks_entropy.py (MG), society_entropy.py (Polis: trajectory/
+│   │                        #   macro/mobility entropy, equivalence classes, welfare)
+│   ├── scripts/             # run_mock_single.py, run_sweep_memory.py, estimate_tokens.py,
+│   │                        #   society_run_mock.py, society_sweep.py, society_estimate_tokens.py
 │   └── results/
 ├── ml_ergodic/              # NN training wrapped as an ErgodicSystem
 │   ├── system.py            # GradientDescentSystem(ErgodicSystem)
@@ -84,6 +88,11 @@ All `basic/` paths below are relative to `basic/` (e.g. `cd basic/agent_based_mo
 cd llm_abm && python scripts/run_mock_single.py
 cd llm_abm && python scripts/run_sweep_memory.py            # mock memory-window sweep
 cd llm_abm && python scripts/estimate_tokens.py             # usage estimate before live runs
+# Polis society: free mock pipeline → llm_abm/results/
+cd llm_abm && python scripts/society_run_mock.py            # single-run diagnostic
+cd llm_abm && python scripts/society_sweep.py --knob memory        # individual-memory sweep
+cd llm_abm && python scripts/society_sweep.py --knob forgiveness   # reputation-decay sweep
+cd llm_abm && python scripts/society_estimate_tokens.py     # usage estimate before live runs
 # Live LLM runs require camel-ai + API key + explicit --live flag; NEVER run without user approval
 
 # ML-as-ergodic-system → ml_ergodic/results/
@@ -256,6 +265,18 @@ The Minority Game with LLM-powered agents (see `llm_abm/README.md` and `doc/tool
 - Personas cycled across agents (LLM analog of random strategy tables); binary outcome sequence feeds block-counting entropy directly (reuses `basic/ergodic_systems/entropy` via sys.path)
 - Transcripts logged as JSONL; run records as JSON in `results/runs/` so analysis never requires re-running
 - Metrics duplicated verbatim from the classical MG for direct comparability
+
+### Polis — LLM Society (`llm_abm/society/`)
+
+A minimally complete society of LLM agents (design doc: `llm_abm/society/README.md`). Agents have fixed identities (role, class of origin, temperament, household, friends, faction) and personal **value weights** over four fulfillment dimensions (prosperity, belonging, standing, security); fulfillment F_i = Σ_d w_id·state_id scores each agent by their own values. Seven actions per season (WORK/SOCIALIZE/HELP/HOST_GATHERING/VENTURE/ADVOCATE/REST); the LLM decides, the deterministic `world.py` engine applies all consequences.
+
+**Key design choices:**
+- Two memory knobs: `memory_window` (individual — seasons of events in the prompt) and `reputation_decay`/`tie_decay` (societal — how fast the institution forgets). The forgiveness question as literal parameters
+- `SocietyMockBackend` is weakly memory-sensitive on purpose (reciprocity toward remembered helpers, venture hot-hand, gathering imitation) so both knobs produce variation at zero cost; with w=0 it is memoryless
+- `BudgetGuard` wraps any paid backend and hard-stops at `max_api_calls`, keeping partial records — in addition to the `allow_api_calls`/`--live` guardrails
+- Analysis (`analysis/society_entropy.py`): pooled trajectory block entropy per equivalence class (class of origin, faction, dominant value, temperament), macro distribution-state entropy, and **mobility entropy** (fulfillment-rank quintile transition matrix → Markov entropy rate; 0 = frozen hierarchy)
+- Engine event strings have fixed formats that `agents._memory_signals()` parses by substring — if you change event wording in `world.py`, update `_memory_signals()` to match
+- Entropy data budget: 5-bin alphabets, k ≤ 4, pooling — LLM runs are short
 
 ### ML Training as an Ergodic System (`ml_ergodic/`)
 

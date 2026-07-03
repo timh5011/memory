@@ -1,5 +1,18 @@
 # LLM Agent-Based Models: KS Entropy of an LLM Society
 
+Two experiments live here:
+
+1. **LLM Minority Game** (`sim/`, below) — the classical game with LLM agents;
+   the controlled, baseline-calibrated experiment.
+2. **Polis** (`society/`) — a minimally complete society of LLM agents with
+   identities, value systems, relationships, and politics; the
+   maximal-scope experiment. See `society/README.md`.
+
+Both share the same backend abstraction (`sim/backends.py`), the same
+mock-first zero-cost workflow, and the same money guardrails.
+
+---
+
 This experiment carries the project's central question — *how much memory is
 optimal for a system to make progress?* — into agent-based models whose agents
 are **LLMs instead of lookup tables**. It is the natural next step after the
