@@ -1,7 +1,7 @@
 """Metrics for the LLM Minority Game.
 
 Identical definitions to basic/agent_based_models/minority_game/sim/metrics.py
-(duplicated here so llm_abm/sim stays a self-contained package), so results
+(duplicated here so llm_abm/minority_game stays a self-contained package), so results
 are directly comparable with the classical Minority Game sweep.
 """
 

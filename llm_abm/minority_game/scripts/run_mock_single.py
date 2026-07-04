@@ -15,10 +15,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from sim import LLMMinorityGameConfig, LLMMinorityGameModel, volatility, efficiency, predictability
-from analysis.ks_entropy import block_entropy_analysis
+from minority_game import LLMMinorityGameConfig, LLMMinorityGameModel, volatility, efficiency, predictability
+from minority_game.analysis.ks_entropy import block_entropy_analysis
 
 
 def main() -> None:

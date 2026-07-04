@@ -1,4 +1,4 @@
 .DS_Store
 __pycache__/
 # Mock-backend run artifacts are free to regenerate; live LLM run records should be committed
-llm_abm/results/runs/mock_*
+llm_abm/*/results/runs/mock_*

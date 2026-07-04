@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "basic" / "ergodic_systems"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "basic" / "ergodic_systems"))
 
 from entropy.block_counting import symbolize_timeseries, shannon_entropy, \
     empirical_block_distribution  # noqa: E402

@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sim.backends import AgentBackend  # noqa: E402
+from backends import AgentBackend  # noqa: E402
 
 # Rough per-dimension gains of each action (mirrors world.py magnitudes,
 # expressed in normalized-dimension units)

@@ -10,8 +10,8 @@ of the Minority Game for **scope**: the questions in `doc/PHILOSOPHY.md`
 What memory level optimizes progress?) are asked of a whole small
 civilization rather than a single coordination game.
 
-Built on the CAMEL-custom-loop pattern via the existing
-`llm_abm/sim/backends.py` abstraction: the free `SocietyMockBackend` runs the
+Built on the CAMEL-custom-loop pattern via the shared
+`llm_abm/backends.py` abstraction: the free `SocietyMockBackend` runs the
 entire pipeline at zero cost; live LLM runs plug in later behind the same
 guardrails plus a hard API-call budget cap.
 
@@ -56,9 +56,9 @@ This is the experiment. Both are exact, sweepable parameters:
 | `reputation_decay`, `tie_decay` | How fast standing and relationships fade | *How forgiving is the institution? Do grudges and glory persist?* |
 
 The central plots: KS entropy and success metrics as functions of each knob
-(`scripts/society_sweep.py --knob memory` / `--knob forgiveness`).
+(`society/scripts/society_sweep.py --knob memory` / `--knob forgiveness`).
 
-## Ergodic Analysis (`analysis/society_entropy.py`)
+## Ergodic Analysis (`society/analysis/society_entropy.py`)
 
 Four views, extending the sugarscape playbook:
 
@@ -92,7 +92,7 @@ baseline that live LLM societies get compared against.
 ## Running
 
 ```bash
-cd llm_abm
+cd llm_abm/society
 
 # Free — validated:
 python scripts/society_run_mock.py                    # → results/mock_society_run.png
@@ -129,8 +129,19 @@ society/
 │                   #   rendering, strict JSON action parsing (fallback: REST)
 ├── agents.py       # bounded event memory → prompt; memory-signal extraction
 ├── mock_policy.py  # free in-character stand-in: value-weighted action scoring
-└── model.py        # season loop, BudgetGuard, records for ergodic analysis
+├── model.py        # season loop, BudgetGuard, records for ergodic analysis
+├── analysis/
+│   └── society_entropy.py  # trajectory/macro/mobility entropy, equivalence classes, welfare
+├── scripts/
+│   ├── society_run_mock.py         # single mock run → diagnostic panel
+│   ├── society_sweep.py            # sweep a memory knob (mock default, --live guarded)
+│   └── society_estimate_tokens.py  # usage estimate before live runs
+└── results/                        # plots; results/runs/ holds records + transcripts
 ```
+
+Shared with the Minority Game via `llm_abm/backends.py` and
+`llm_abm/recorder.py`: the `AgentBackend`/`CamelBackend` abstraction and
+`TranscriptRecorder`.
 
 ## Known Limitations (by design, for now)
 

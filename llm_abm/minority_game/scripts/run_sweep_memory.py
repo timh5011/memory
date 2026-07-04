@@ -28,11 +28,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from sim import LLMMinorityGameConfig, LLMMinorityGameModel, efficiency, volatility
-from sim.backends import CamelBackend
-from analysis.ks_entropy import entropy_rate
+from minority_game import LLMMinorityGameConfig, LLMMinorityGameModel, efficiency, volatility
+from backends import CamelBackend
+from minority_game.analysis.ks_entropy import entropy_rate
 
 
 def parse_args():

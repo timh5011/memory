@@ -9,30 +9,20 @@ keep the sequential loop as the reference implementation.)
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # put llm_abm/ on path for shared modules
+
+from recorder import TranscriptRecorder  # noqa: E402
+
 from .config import LLMMinorityGameConfig
 from .agents import LLMAgent
 from .backends import AgentBackend, build_backend
 from .prompts import GENERIC_PERSONA, PERSONAS
-
-
-class TranscriptRecorder:
-    """Append-only JSONL log of every prompt/response in a run."""
-
-    def __init__(self, path: str | Path):
-        self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._fh = open(self.path, "a")
-
-    def log(self, record: dict) -> None:
-        self._fh.write(json.dumps(record) + "\n")
-
-    def close(self) -> None:
-        self._fh.close()
 
 
 class LLMMinorityGameModel:

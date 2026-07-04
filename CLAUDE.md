@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Organizational Principle
+
+**Each simulation lives in its own subdirectory** of whichever directory it
+belongs to, holding *that* simulation's model code, its `analysis/`, its
+`scripts/`, and its `results/`. Only genuinely general definitions — shared
+base classes and cross-simulation abstractions (e.g. the `ErgodicSystem` ABC in
+`basic/ergodic_systems/systems/`, or the LLM `AgentBackend`/`TranscriptRecorder`
+in `llm_abm/backends.py` / `llm_abm/recorder.py`) — live in parent directories,
+shared across simulations.
+Most of the repo already follows this (`basic/agent_based_models/{sugarscape,
+minority_game}/`, `basic/ergodic_systems/`, `llm_abm/{minority_game,society}/`).
+When adding a new simulation, give it its own subdir; don't scatter its scripts
+or analysis into shared folders.
+
 ## Repository Structure
 
 ```
@@ -11,15 +25,22 @@ memory/
 │   ├── ks_entropy_in_research_literature.md
 │   ├── Claude Sociophysics Survey.md
 │   └── tool_report_camel_oasis_mirofish.md  # CAMEL/OASIS/MiroFish survey behind llm_abm/
-├── llm_abm/                 # LLM agent-based models (Minority Game + Polis society)
-│   ├── sim/                 # MG: config, prompts, backends (mock/CAMEL), agents, model, metrics
-│   ├── society/             # Polis: minimally complete LLM society (identities, value
-│   │                        #   weights, world engine, two memory knobs) — see its README.md
-│   ├── analysis/            # ks_entropy.py (MG), society_entropy.py (Polis: trajectory/
-│   │                        #   macro/mobility entropy, equivalence classes, welfare)
-│   ├── scripts/             # run_mock_single.py, run_sweep_memory.py, estimate_tokens.py,
-│   │                        #   society_run_mock.py, society_sweep.py, society_estimate_tokens.py
-│   └── results/
+├── llm_abm/                 # LLM agent-based models — one subdir per simulation
+│   ├── backends.py          # SHARED: AgentBackend + CamelBackend + refuse_paid_backend
+│   ├── recorder.py          # SHARED: TranscriptRecorder (JSONL logging)
+│   ├── minority_game/       # SIM 1 — the LLM Minority Game, self-contained:
+│   │   ├── config.py prompts.py agents.py model.py metrics.py
+│   │   ├── backends.py      #   MockBackend (MG 0/1 policies) + build_backend
+│   │   ├── analysis/        #   ks_entropy.py
+│   │   ├── scripts/         #   run_mock_single.py, run_sweep_memory.py, estimate_tokens.py
+│   │   └── results/
+│   └── society/             # SIM 2 — Polis, minimally complete LLM society, self-contained:
+│       ├── config.py identity.py world.py prompts.py agents.py mock_policy.py model.py
+│       ├── analysis/        #   society_entropy.py (trajectory/macro/mobility entropy,
+│       │                    #     equivalence classes, welfare)
+│       ├── scripts/         #   society_run_mock.py, society_sweep.py, society_estimate_tokens.py
+│       ├── results/
+│       └── README.md
 ├── ml_ergodic/              # NN training wrapped as an ErgodicSystem
 │   ├── system.py            # GradientDescentSystem(ErgodicSystem)
 │   ├── scripts/             # run_block_entropy.py, run_lyapunov_perturbation.py, run_ergodicity.py
@@ -84,15 +105,16 @@ basic/
 All `basic/` paths below are relative to `basic/` (e.g. `cd basic/agent_based_models/sugarscape`).
 
 ```bash
-# LLM ABM: free mock pipeline (no API calls, no cost) → llm_abm/results/
-cd llm_abm && python scripts/run_mock_single.py
-cd llm_abm && python scripts/run_sweep_memory.py            # mock memory-window sweep
-cd llm_abm && python scripts/estimate_tokens.py             # usage estimate before live runs
-# Polis society: free mock pipeline → llm_abm/results/
-cd llm_abm && python scripts/society_run_mock.py            # single-run diagnostic
-cd llm_abm && python scripts/society_sweep.py --knob memory        # individual-memory sweep
-cd llm_abm && python scripts/society_sweep.py --knob forgiveness   # reputation-decay sweep
-cd llm_abm && python scripts/society_estimate_tokens.py     # usage estimate before live runs
+# LLM Minority Game: free mock pipeline (no API calls, no cost) → minority_game/results/
+cd llm_abm/minority_game && python scripts/run_mock_single.py
+cd llm_abm/minority_game && python scripts/run_sweep_memory.py     # mock memory-window sweep
+cd llm_abm/minority_game && python scripts/estimate_tokens.py      # usage estimate before live runs
+# Polis society: free mock pipeline → society/results/
+cd llm_abm/society && python scripts/society_run_mock.py            # single-run diagnostic
+cd llm_abm/society && python scripts/society_sweep.py --knob memory        # individual-memory sweep
+cd llm_abm/society && python scripts/society_sweep.py --knob forgiveness   # reputation-decay sweep
+cd llm_abm/society && python scripts/society_estimate_tokens.py     # usage estimate before live runs
+# Scripts add llm_abm/ to sys.path, so they're also runnable as python <sim>/scripts/... from llm_abm/
 # Live LLM runs require camel-ai + API key + explicit --live flag; NEVER run without user approval
 
 # ML-as-ergodic-system → ml_ergodic/results/
@@ -254,16 +276,29 @@ TrainingConfig → run_training() → TrainingResult
 
 
 
-### LLM Agent-Based Models (`llm_abm/`)
+### LLM ABM shared modules (`llm_abm/backends.py`, `llm_abm/recorder.py`)
+
+Both `llm_abm/` simulations share these two parent-level modules (the "general
+definitions stay in parents" case): `backends.py` holds the `AgentBackend` ABC,
+the `CamelBackend` CAMEL wrapper, and the `refuse_paid_backend()` guardrail;
+`recorder.py` holds `TranscriptRecorder` (JSONL logging). Each simulation keeps
+its *own* free mock backend, since the action spaces differ
+(`minority_game/backends.py:MockBackend` plays 0/1;
+`society/mock_policy.py:SocietyMockBackend` picks the seven society actions).
+Package modules and scripts add `llm_abm/` to `sys.path` so `import backends`,
+`import recorder`, `import minority_game`, `import society` all resolve
+regardless of cwd.
+
+### LLM Minority Game (`llm_abm/minority_game/`)
 
 The Minority Game with LLM-powered agents (see `llm_abm/README.md` and `doc/tool_report_camel_oasis_mirofish.md`). The tunable memory parameter is `memory_window` (w) — the number of past rounds rendered into each agent's prompt.
 
 **Key design choices:**
 - **Memory is external and researcher-controlled**: every backend call is stateless single-turn; the prompt IS the agent's memory (no CAMEL ChatHistoryMemory), so w is an exact experimental variable
-- **Backend abstraction** (`sim/backends.py`): `MockBackend` (free, local, rule-based policy mixture — the whole pipeline runs at zero cost) and `CamelBackend` (CAMEL ChatAgent; untested until camel-ai installed)
-- **Money guardrails**: `CamelBackend` requires `allow_api_calls=True`; sweep script requires `--live`; `build_backend()` only auto-builds mock. NEVER trigger paid runs without explicit user approval
-- Personas cycled across agents (LLM analog of random strategy tables); binary outcome sequence feeds block-counting entropy directly (reuses `basic/ergodic_systems/entropy` via sys.path)
-- Transcripts logged as JSONL; run records as JSON in `results/runs/` so analysis never requires re-running
+- **Backends**: `minority_game/backends.py:MockBackend` (free, local, rule-based policy mixture — the whole pipeline runs at zero cost) plus `CamelBackend` re-exported from the shared `llm_abm/backends.py` (CAMEL ChatAgent; untested until camel-ai installed)
+- **Money guardrails**: `CamelBackend` requires `allow_api_calls=True`; sweep script requires `--live`; `build_backend()` only auto-builds mock and calls `refuse_paid_backend()` (shared `backends.py`) otherwise. NEVER trigger paid runs without explicit user approval
+- Personas cycled across agents (LLM analog of random strategy tables); binary outcome sequence feeds block-counting entropy directly (`minority_game/analysis/ks_entropy.py` reuses `basic/ergodic_systems/entropy` via sys.path)
+- Transcripts logged as JSONL; run records as JSON in `minority_game/results/runs/` so analysis never requires re-running
 - Metrics duplicated verbatim from the classical MG for direct comparability
 
 ### Polis — LLM Society (`llm_abm/society/`)
@@ -274,7 +309,7 @@ A minimally complete society of LLM agents (design doc: `llm_abm/society/README.
 - Two memory knobs: `memory_window` (individual — seasons of events in the prompt) and `reputation_decay`/`tie_decay` (societal — how fast the institution forgets). The forgiveness question as literal parameters
 - `SocietyMockBackend` is weakly memory-sensitive on purpose (reciprocity toward remembered helpers, venture hot-hand, gathering imitation) so both knobs produce variation at zero cost; with w=0 it is memoryless
 - `BudgetGuard` wraps any paid backend and hard-stops at `max_api_calls`, keeping partial records — in addition to the `allow_api_calls`/`--live` guardrails
-- Analysis (`analysis/society_entropy.py`): pooled trajectory block entropy per equivalence class (class of origin, faction, dominant value, temperament), macro distribution-state entropy, and **mobility entropy** (fulfillment-rank quintile transition matrix → Markov entropy rate; 0 = frozen hierarchy)
+- Analysis (`society/analysis/society_entropy.py`): pooled trajectory block entropy per equivalence class (class of origin, faction, dominant value, temperament), macro distribution-state entropy, and **mobility entropy** (fulfillment-rank quintile transition matrix → Markov entropy rate; 0 = frozen hierarchy)
 - Engine event strings have fixed formats that `agents._memory_signals()` parses by substring — if you change event wording in `world.py`, update `_memory_signals()` to match
 - Entropy data budget: 5-bin alphabets, k ≤ 4, pooling — LLM runs are short
 

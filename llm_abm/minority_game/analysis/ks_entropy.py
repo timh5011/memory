@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 # Allow importing the shared entropy toolkit
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "basic" / "ergodic_systems"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "basic" / "ergodic_systems"))
 
 from entropy.block_counting import empirical_block_distribution, shannon_entropy  # noqa: E402
 

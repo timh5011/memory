@@ -31,11 +31,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from society import SocietyConfig, SocietyModel
-from sim.backends import CamelBackend
-from analysis.society_entropy import trajectory_entropy, mobility, welfare_metrics
+from backends import CamelBackend
+from society.analysis.society_entropy import trajectory_entropy, mobility, welfare_metrics
 
 KNOBS = {
     "memory": ("memory_window", int, "0,1,2,4,8", "Individual memory window w"),

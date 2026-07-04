@@ -15,9 +15,9 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from sim.prompts import build_system_prompt, render_observation, PERSONAS
+from minority_game.prompts import build_system_prompt, render_observation, PERSONAS
 
 TOKENS_PER_CHAR = 0.25   # rough heuristic
 OUTPUT_TOKENS_PER_CALL = 5  # "0" or "1" plus wrapper tokens

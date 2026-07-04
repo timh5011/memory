@@ -17,8 +17,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sim.backends import AgentBackend, build_backend  # noqa: E402
-from sim.model import TranscriptRecorder  # noqa: E402
+from backends import AgentBackend, refuse_paid_backend  # noqa: E402
+from recorder import TranscriptRecorder  # noqa: E402
 
 from .config import SocietyConfig
 from .identity import sample_population, DIMENSIONS
@@ -63,7 +63,7 @@ class SocietyModel:
             if self.config.backend == "mock":
                 backend = SocietyMockBackend()
             else:
-                backend = build_backend(self.config)  # raises: paid backends must be explicit
+                backend = refuse_paid_backend(self.config.backend)  # raises: paid backends must be explicit
         if not backend.is_free and self.config.max_api_calls is not None:
             backend = BudgetGuard(backend, self.config.max_api_calls)
         self.backend = backend

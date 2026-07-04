@@ -2,13 +2,13 @@
 
 Two experiments live here:
 
-1. **LLM Minority Game** (`sim/`, below) — the classical game with LLM agents;
-   the controlled, baseline-calibrated experiment.
+1. **LLM Minority Game** (`minority_game/`, below) — the classical game with
+   LLM agents; the controlled, baseline-calibrated experiment.
 2. **Polis** (`society/`) — a minimally complete society of LLM agents with
    identities, value systems, relationships, and politics; the
    maximal-scope experiment. See `society/README.md`.
 
-Both share the same backend abstraction (`sim/backends.py`), the same
+Both share the same backend abstraction (`backends.py` at the `llm_abm/` root), the same
 mock-first zero-cost workflow, and the same money guardrails.
 
 ---
@@ -63,35 +63,43 @@ identical agents given identical prompts would herd maximally. Set
 
 ## Architecture
 
+Each simulation is a self-contained subdirectory; the shared backend/recorder
+modules live at the `llm_abm/` root (see the repo `CLAUDE.md` organizational
+principle).
+
 ```
 llm_abm/
-├── sim/
+├── backends.py       # SHARED: AgentBackend protocol + CamelBackend ($) + refuse_paid_backend guardrail
+├── recorder.py       # SHARED: TranscriptRecorder (JSONL logging)
+├── minority_game/    # this experiment, self-contained
 │   ├── config.py     # LLMMinorityGameConfig — w (memory_window) is the key parameter
 │   ├── prompts.py    # system/observation templates + robust 0/1 response parsing
-│   ├── backends.py   # AgentBackend protocol: MockBackend (free) / CamelBackend ($)
+│   ├── backends.py   # MockBackend (free, MG 0/1 policies) + build_backend()
 │   ├── agents.py     # LLMAgent: bounded deque memory → prompt → backend → action
-│   ├── model.py      # round loop, transcripts (JSONL), run records (JSON)
-│   └── metrics.py    # volatility / efficiency / predictability (same defs as classical MG)
-├── analysis/
-│   └── ks_entropy.py # block entropy of outcome sequences (reuses basic/ergodic_systems)
-├── scripts/
-│   ├── run_mock_single.py   # free single-run diagnostic (4-panel plot)
-│   ├── run_sweep_memory.py  # THE experiment: sweep w → entropy vs efficiency
-│   └── estimate_tokens.py   # usage estimate BEFORE any live run
-└── results/                 # plots; results/runs/ holds JSON records + JSONL transcripts
+│   ├── model.py      # round loop; transcripts + run records (via shared recorder.py)
+│   ├── metrics.py    # volatility / efficiency / predictability (same defs as classical MG)
+│   ├── analysis/
+│   │   └── ks_entropy.py # block entropy of outcome sequences (reuses basic/ergodic_systems)
+│   ├── scripts/
+│   │   ├── run_mock_single.py   # free single-run diagnostic (4-panel plot)
+│   │   ├── run_sweep_memory.py  # THE experiment: sweep w → entropy vs efficiency
+│   │   └── estimate_tokens.py   # usage estimate BEFORE any live run
+│   └── results/                 # plots; results/runs/ holds JSON records + JSONL transcripts
+└── society/          # the Polis experiment (see society/README.md)
 ```
 
 The backend abstraction is the load-bearing piece:
 
-- **`MockBackend`** — a mixture of simple behavioral policies standing in for
-  LLM reasoning. Free, local, no network. The entire pipeline (simulation,
-  parsing, retries, transcripts, metrics, entropy analysis, sweep, plots) runs
-  and is validated against it. It occasionally returns verbose text on purpose
-  so the response parser and retry path stay exercised.
-- **`CamelBackend`** — wraps a CAMEL `ChatAgent` for live runs. Requires
-  `pip install camel-ai` and an API key. **Untested until camel-ai is
-  installed** — verify the `ModelFactory`/`ChatAgent` calls against the
-  installed version before the first live run.
+- **`MockBackend`** (`minority_game/backends.py`) — a mixture of simple
+  behavioral policies standing in for LLM reasoning. Free, local, no network.
+  The entire pipeline (simulation, parsing, retries, transcripts, metrics,
+  entropy analysis, sweep, plots) runs and is validated against it. It
+  occasionally returns verbose text on purpose so the response parser and retry
+  path stay exercised.
+- **`CamelBackend`** (shared `llm_abm/backends.py`) — wraps a CAMEL `ChatAgent` for
+  live runs. Requires `pip install camel-ai` and an API key. **Untested until
+  camel-ai is installed** — verify the `ModelFactory`/`ChatAgent` calls against
+  the installed version before the first live run.
 
 ### Money guardrails
 
@@ -99,8 +107,8 @@ Nothing in this directory can spend money by accident:
 
 1. `CamelBackend` refuses to construct without `allow_api_calls=True`.
 2. The sweep script refuses paid backends without the `--live` flag.
-3. `build_backend()` only auto-builds the mock; paid backends must be an
-   explicit line of code in the caller.
+3. `build_backend()` only auto-builds the mock; paid backends hit
+   `refuse_paid_backend()` (shared `backends.py`) and must be an explicit line of code in the caller.
 4. `scripts/estimate_tokens.py` renders the real prompts and reports call and
    token counts for any planned configuration before you commit to it. (It
    reports tokens, not dollars — multiply by current prices yourself so the
@@ -109,7 +117,7 @@ Nothing in this directory can spend money by accident:
 ## Running
 
 ```bash
-cd llm_abm
+cd llm_abm/minority_game
 
 # Free — validated, runs today:
 python scripts/run_mock_single.py                 # → results/mock_single_run.png
@@ -121,7 +129,7 @@ python scripts/run_sweep_memory.py --backend camel --live \
     --agents 9 --steps 30 --seeds 1 --windows 0,2,4
 ```
 
-**Configuration** (`sim/config.py`):
+**Configuration** (`minority_game/config.py`):
 
 | Parameter | Default | Description |
 |---|---|---|
@@ -143,7 +151,7 @@ near criticality, which is what makes the comparison meaningful.
 The winning-option sequence is already binary, so KS entropy estimation is
 identical to the classical Minority Game: block counting via
 `empirical_block_distribution` / `shannon_entropy` from
-`basic/ergodic_systems`, no symbolization step. `analysis/ks_entropy.py`
+`basic/ergodic_systems`, no symbolization step. `minority_game/analysis/ks_entropy.py`
 wraps this for saved runs, so analysis is fully decoupled from simulation —
 you can re-analyze old transcripts without re-running (or re-paying for)
 anything.
@@ -156,7 +164,7 @@ anything.
   treated as meaningful.
 - **Prompt sensitivity**: agent behavior is fully determined by the prompt;
   small wording changes are a form of measurement uncertainty. Prompts live in
-  one file (`sim/prompts.py`) and are logged verbatim in transcripts so every
+  one file (`minority_game/prompts.py`) and are logged verbatim in transcripts so every
   run is auditable against the exact wording that produced it.
 - **No rationality ground truth**: LLM agents approximate strategic reasoning;
   they are not game-theoretically rational. The classical MG results are the

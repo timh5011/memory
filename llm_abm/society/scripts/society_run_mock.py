@@ -16,10 +16,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from society import SocietyConfig, SocietyModel
-from analysis.society_entropy import (
+from society.analysis.society_entropy import (
     trajectory_entropy, macro_entropy, mobility, partitions,
     welfare_metrics, gini,
 )
